@@ -64,5 +64,12 @@ class AreaSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        DB::table('areas')->insert([
+            'id'=> 9,
+            'nama' => 'Region',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }
