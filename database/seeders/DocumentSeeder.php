@@ -10,6 +10,7 @@ class DocumentSeeder extends Seeder
     public function run(): void
     {
         DB::table('documents')->insert([
+            'id'=> 1,
             'judul' => 'Program cicilan 12 bulan di Amskin Beauty Clinic',
             'periode_mulai' => '2026-01-04',
             'periode_selesai'=>'2026-12-31',

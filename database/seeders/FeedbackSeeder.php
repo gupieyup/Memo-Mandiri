@@ -10,6 +10,7 @@ class FeedbackSeeder extends Seeder
     public function run(): void
     {
         DB::table('feedbacks')->insert([
+            'id' => 1,
             'message' => 'Mohon perbaiki format laporan dan lengkapi data pendukung.',
             'user_id' => 2, // AMO Region
             'document_id' => 1,
