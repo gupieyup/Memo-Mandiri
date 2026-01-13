@@ -13,20 +13,27 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('nama');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('role', ['AMO Area', 'AMO Region', 'MO']);
+            $table->unsignedBigInteger('area_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            $table->foreign('area_id')->references('id')->on('areas')->cascadeOnDelete();
         });
     }
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
+    public function down()
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['area_id']);
+        });
         Schema::dropIfExists('users');
     }
 };
