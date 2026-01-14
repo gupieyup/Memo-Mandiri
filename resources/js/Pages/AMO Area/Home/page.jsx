@@ -1,25 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 import AreaLayout from "../../../Layouts/AreaLayout";
+import EditDocumentModal from "./EditDocumentModal";
 import { FiEdit2, FiDownload, FiFilter } from "react-icons/fi";
 
 export default function Home() {
-    const { auth, documents, categories, statuses, filters } = usePage().props;
+    const { auth, documents, categories, areas, statuses, filters, flash } = usePage().props;
     const [statusFilter, setStatusFilter] = useState(filters.status || "");
     const [categoryFilter, setCategoryFilter] = useState(filters.category || "");
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
+
+    // Update filters when props change
+    useEffect(() => {
+        setStatusFilter(filters.status || "");
+        setCategoryFilter(filters.category || "");
+    }, [filters]);
 
     const handleFilterChange = () => {
-        router.get(
-            route("amo-area.home"),
-            {
-                status: statusFilter || undefined,
-                category: categoryFilter || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-            }
-        );
+        const params = {};
+        
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        
+        if (categoryFilter) {
+            params.category = categoryFilter;
+        }
+        
+        router.get(route("amo-area.home"), params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleResetFilter = () => {
+        setStatusFilter("");
+        setCategoryFilter("");
+        router.get(route("amo-area.home"), {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleEdit = (document) => {
+        setSelectedDocument(document);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsEditModalOpen(false);
+        setSelectedDocument(null);
     };
 
     const handleDownload = (documentId) => {
@@ -52,6 +83,18 @@ export default function Home() {
     return (
         <AreaLayout>
             <div className="space-y-6">
+                {/* Success Message */}
+                {flash?.success && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md flex items-center animate-fade-in">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <p className="ml-3 text-green-800 font-medium">{flash.success}</p>
+                    </div>
+                )}
+
                 {/* Welcome Section */}
                 <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-2xl p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400 opacity-10 rounded-full -mr-48 -mt-48"></div>
@@ -78,16 +121,14 @@ export default function Home() {
                         </div>
 
                         {/* Filters */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Status
                                 </label>
                                 <select
                                     value={statusFilter}
-                                    onChange={(e) => {
-                                        setStatusFilter(e.target.value);
-                                    }}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
                                 >
                                     <option value="">All Status</option>
@@ -103,31 +144,63 @@ export default function Home() {
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Kategori
                                 </label>
+                                <select
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                >
+                                    <option value="">All Categories</option>
+                                    {categories.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.nama}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 opacity-0">
+                                    Action
+                                </label>
                                 <div className="flex gap-2">
-                                    <select
-                                        value={categoryFilter}
-                                        onChange={(e) => {
-                                            setCategoryFilter(e.target.value);
-                                        }}
-                                        className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
-                                    >
-                                        <option value="">All Categories</option>
-                                        {categories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.nama}
-                                            </option>
-                                        ))}
-                                    </select>
                                     <button
                                         onClick={handleFilterChange}
-                                        className="px-6 py-2.5 bg-gradient-to-r from-blue-900 to-blue-800 text-white font-semibold rounded-xl hover:from-blue-800 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+                                        className="flex-1 px-6 py-2.5 bg-gradient-to-r from-blue-900 to-blue-800 text-white font-semibold rounded-xl hover:from-blue-800 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                                     >
                                         <FiFilter className="text-lg" />
-                                        Filter
+                                        Apply Filter
                                     </button>
+                                    {(statusFilter || categoryFilter) && (
+                                        <button
+                                            onClick={handleResetFilter}
+                                            className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-300"
+                                            title="Reset Filter"
+                                        >
+                                            Reset
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
+
+                        {/* Active Filter Badges */}
+                        {(statusFilter || categoryFilter) && (
+                            <div className="mt-4 flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-semibold text-gray-600">
+                                    Active Filters:
+                                </span>
+                                {statusFilter && (
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
+                                        Status: {statusFilter}
+                                    </span>
+                                )}
+                                {categoryFilter && (
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium">
+                                        Category: {categories.find(c => c.id == categoryFilter)?.nama}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Table */}
@@ -189,9 +262,7 @@ export default function Home() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
-                                                        onClick={() => {
-                                                            /* Handle edit */
-                                                        }}
+                                                        onClick={() => handleEdit(doc)}
                                                         className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200 group"
                                                         title="Edit"
                                                     >
@@ -234,7 +305,10 @@ export default function Home() {
                                                     No Documents Found
                                                 </p>
                                                 <p className="text-sm text-gray-500">
-                                                    Start by uploading your first MEMO document
+                                                    {(statusFilter || categoryFilter) 
+                                                        ? "No documents match your filter criteria"
+                                                        : "Start by uploading your first MEMO document"
+                                                    }
                                                 </p>
                                             </div>
                                         </td>
@@ -293,6 +367,15 @@ export default function Home() {
                     )}
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            <EditDocumentModal
+                isOpen={isEditModalOpen}
+                onClose={handleCloseModal}
+                document={selectedDocument}
+                areas={areas}
+                categories={categories}
+            />
         </AreaLayout>
     );
 }

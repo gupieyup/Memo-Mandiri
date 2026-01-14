@@ -16,8 +16,21 @@ return new class extends Migration
             $table->string('judul');
             $table->date('periode_mulai');
             $table->date('periode_selesai');
-            $table->enum('status', ['Draft', 'On Process','Revision by AMO Region','Revision by MO', 'Revision by CCH', 'Accept by AMO Region', 'Accept by MO', 'Accept by CCH']);
+            $table->enum('status', [
+                'Draft', 
+                'On Process',
+                'Revision by AMO Region',
+                'Revision by MO', 
+                'Revision by CCH', 
+                'Accept by AMO Region', 
+                'Accept by MO', 
+                'Accept by CCH'
+            ])->default('Draft');
+            $table->string('file_name');
             $table->string('file_path');
+            $table->unsignedBigInteger('file_size')->nullable();
+            $table->string('file_type')->nullable();
+            $table->text('notes')->nullable();
             $table->unsignedBigInteger('area_id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('category_id');

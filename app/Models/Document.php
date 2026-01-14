@@ -21,6 +21,7 @@ class Document extends Model
         'file_path',
         'file_size',
         'file_type',
+        'notes',
         'area_id',
         'user_id',
         'category_id',
