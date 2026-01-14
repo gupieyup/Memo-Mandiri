@@ -10,6 +10,11 @@ class Feedback extends Model
     use HasFactory;
 
     /**
+     * The table associated with the model.
+     */
+    protected $table = 'feedbacks';
+
+    /**
      * Mass assignable attributes
      */
     protected $fillable = [
