@@ -57,9 +57,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:AMO Area')->prefix('amo-area')->name('amo-area.')->group(function () {
         // Home
         Route::get('/home', [AreaHomeController::class, 'index'])->name('home');
+        Route::get('/download-document/{id}', [AreaHomeController::class, 'download'])->name('download-document');
         
         // Upload
         Route::get('/upload-document', [AreaUploadController::class, 'index'])->name('upload-document');
+        Route::post('/upload-document', [AreaUploadController::class, 'store'])->name('upload-document.store');
     });
 
     // AMO Region routes
