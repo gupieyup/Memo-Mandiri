@@ -3,6 +3,7 @@
 use App\Http\Controllers\AreaHomeController;
 use App\Http\Controllers\AreaUploadController;
 use App\Http\Controllers\CCHReviewController;
+use App\Http\Controllers\CCHUploadSignController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MOManageAccountController;
@@ -91,6 +92,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/review', [CCHReviewController::class, 'index'])->name('review');
         
         // Upload Signature
-        Route::get('/upload-signature', [CCHReviewController::class, 'index'])->name('upload-signature');
+        Route::get('/upload-signature', [CCHUploadSignController::class, 'index'])->name('upload-signature');
     });
 });

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { router } from "@inertiajs/react";
-import MOSidebar from "./MOSidebar";
+import CCHSidebar from "./CCHSidebar";
 import Header from "./Header";
 import LogoutModal from "./LogoutModal";
 
-const MOLayout = ({ children }) => {
+const CCHLayout = ({ children }) => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleLogout = () => {
@@ -15,7 +15,7 @@ const MOLayout = ({ children }) => {
     return (
         <>
             <div className="flex h-screen bg-gray-50 overflow-hidden">
-                <MOSidebar handleLogout={() => setShowLogoutModal(true)} />
+                <CCHSidebar handleLogout={() => setShowLogoutModal(true)} />
                 <main className="flex-1 md:ml-72 flex flex-col h-screen overflow-hidden">
                     <Header />
                     <div className="flex-1 overflow-y-auto pt-28 px-6 pb-6">
@@ -33,4 +33,4 @@ const MOLayout = ({ children }) => {
     );
 };
 
-export default MOLayout;
+export default CCHLayout;
