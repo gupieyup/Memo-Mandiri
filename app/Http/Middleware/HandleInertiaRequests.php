@@ -35,9 +35,20 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $flash = [];
+        
+        // Check if session is available before accessing it
+        if ($request->hasSession()) {
+            $flash = [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+                'info' => $request->session()->get('info'),
+            ];
+        }
+        
         return [
             ...parent::share($request),
-            //
+            'flash' => $flash,
         ];
     }
 }
