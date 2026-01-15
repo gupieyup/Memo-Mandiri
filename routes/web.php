@@ -83,28 +83,40 @@ Route::middleware('auth')->group(function () {
         
         // Review
         Route::get('/review', [RegionReviewController::class, 'index'])->name('review');
+        Route::post('/update-review-status/{id}', [RegionReviewController::class, 'updateStatus'])->name('update-review-status');
+        Route::get('/download-review-document/{id}', [RegionReviewController::class, 'download'])->name('download-review-document');
+        Route::get('/preview-review-document/{id}', [RegionReviewController::class, 'preview'])->name('preview-review-document');
     });
 
     // MO routes
     Route::middleware('role:MO')->prefix('mo')->name('mo.')->group(function () {
         // Review
         Route::get('/review', [MOReviewController::class, 'index'])->name('review');
+        Route::post('/update-review-status/{id}', [MOReviewController::class, 'updateStatus'])->name('update-review-status');
+        Route::get('/download-review-document/{id}', [MOReviewController::class, 'download'])->name('download-review-document');
+        Route::get('/preview-review-document/{id}', [MOReviewController::class, 'preview'])->name('preview-review-document');
         
-        // Upload Signa`ture
+        // Upload Signature
         Route::get('/upload-signature', [MOUploadSignController::class, 'index'])->name('upload-signature');
         
         // Manage Account
         Route::get('/manage-account', [MOManageAccountController::class, 'index'])->name('manage-account');
+        Route::post('/manage-account', [MOManageAccountController::class, 'store'])->name('manage-account.store');
+        Route::put('/manage-account/{id}', [MOManageAccountController::class, 'update'])->name('manage-account.update');
+        Route::delete('/manage-account/{id}', [MOManageAccountController::class, 'destroy'])->name('manage-account.destroy');
     });
 
     // CCH routes
     Route::middleware('role:CCH')->prefix('cch')->name('cch.')->group(function () {
         // Review
         Route::get('/review', [CCHReviewController::class, 'index'])->name('review');
+        Route::post('/update-status/{id}', [CCHReviewController::class, 'updateStatus'])->name('update-status');
+        Route::get('/download-document/{id}', [CCHReviewController::class, 'download'])->name('download-document');
+        Route::get('/preview-document/{id}', [CCHReviewController::class, 'preview'])->name('preview-document');
         
         // Upload Signature
         Route::get('/upload-signature', [CCHUploadSignController::class, 'index'])->name('upload-signature');
-        Route::get('/preview-document/{id}', [CCHUploadSignController::class, 'preview'])->name('preview-document');
+        Route::get('/preview-signature-document/{id}', [CCHUploadSignController::class, 'preview'])->name('preview-signature-document');
         Route::post('/upload-signature', [CCHUploadSignController::class, 'store'])->name('upload-signature.store');
     });
 });

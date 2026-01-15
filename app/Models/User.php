@@ -47,4 +47,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Area::class);
     }
+
+    // User has many area responsibilities (for AMO Region)
+    public function areaResponsibilities()
+    {
+        return $this->hasMany(UserAreaResponsibility::class, 'supervisor_id');
+    }
 }

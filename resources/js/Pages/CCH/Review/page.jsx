@@ -1,32 +1,235 @@
-import React, { useState } from "react";
-import { router } from "@inertiajs/react";
+import React, { useState, useEffect } from "react";
+import { router, usePage } from "@inertiajs/react";
 import CCHLayout from "../../../Layouts/CCHLayout";
-import { FiFilter, FiDownload, FiEdit } from "react-icons/fi";
+import { FiDownload, FiEdit, FiSearch, FiFile } from "react-icons/fi";
+import { toast, Toaster } from "sonner";
 
-export default function Review({ auth, documents, areas, categories, filters }) {
+export default function Review({ auth, documents, areas, categories, statuses, filters }) {
+    const { flash } = usePage().props;
     const [selectedArea, setSelectedArea] = useState(filters?.area_id || "all");
     const [selectedCategory, setSelectedCategory] = useState(filters?.category_id || "all");
+    const [statusFilter, setStatusFilter] = useState(filters?.status || "");
+    const [searchQuery, setSearchQuery] = useState(filters?.search || "");
+    const [perPage, setPerPage] = useState(filters?.per_page || 10);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
 
+    // Show toast notifications for flash messages
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success, {
+                duration: 3000,
+            });
+        }
+        if (flash?.error) {
+            toast.error(flash.error, {
+                duration: 3000,
+            });
+        }
+    }, [flash]);
+
+    // Update filters when props change
+    useEffect(() => {
+        if (filters) {
+            setSelectedArea(filters.area_id || "all");
+            setSelectedCategory(filters.category_id || "all");
+            setStatusFilter(filters.status || "");
+            setSearchQuery(filters.search || "");
+            setPerPage(filters.per_page || 10);
+        }
+    }, [filters]);
+
     const applyFilter = () => {
-        router.get(
-            "/cch/review",
-            {
-                area_id: selectedArea,
-                category_id: selectedCategory,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-            }
-        );
+        const params = {};
+        
+        if (selectedArea && selectedArea !== "all") {
+            params.area_id = selectedArea;
+        }
+        
+        if (selectedCategory && selectedCategory !== "all") {
+            params.category_id = selectedCategory;
+        }
+        
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        
+        if (searchQuery) {
+            params.search = searchQuery;
+        }
+        
+        params.per_page = perPage;
+        
+        router.get("/cch/review", params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
-    const handleDownload = (documentId) => {
-        window.location.href = `/cch/download-document/${documentId}`;
+    const handleStatusChange = (value) => {
+        setStatusFilter(value);
+        const params = {};
+        
+        if (value) {
+            params.status = value;
+        }
+        
+        if (selectedArea && selectedArea !== "all") {
+            params.area_id = selectedArea;
+        }
+        
+        if (selectedCategory && selectedCategory !== "all") {
+            params.category_id = selectedCategory;
+        }
+        
+        if (searchQuery) {
+            params.search = searchQuery;
+        }
+        
+        params.per_page = perPage;
+        
+        router.get("/cch/review", params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleCategoryChange = (value) => {
+        setSelectedCategory(value);
+        const params = {};
+        
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        
+        if (selectedArea && selectedArea !== "all") {
+            params.area_id = selectedArea;
+        }
+        
+        if (value && value !== "all") {
+            params.category_id = value;
+        }
+        
+        if (searchQuery) {
+            params.search = searchQuery;
+        }
+        
+        params.per_page = perPage;
+        
+        router.get("/cch/review", params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleAreaChange = (value) => {
+        setSelectedArea(value);
+        const params = {};
+        
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        
+        if (selectedCategory && selectedCategory !== "all") {
+            params.category_id = selectedCategory;
+        }
+        
+        if (value && value !== "all") {
+            params.area_id = value;
+        }
+        
+        if (searchQuery) {
+            params.search = searchQuery;
+        }
+        
+        params.per_page = perPage;
+        
+        router.get("/cch/review", params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleSearch = () => {
+        const params = {};
+        
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        
+        if (selectedArea && selectedArea !== "all") {
+            params.area_id = selectedArea;
+        }
+        
+        if (selectedCategory && selectedCategory !== "all") {
+            params.category_id = selectedCategory;
+        }
+        
+        if (searchQuery) {
+            params.search = searchQuery;
+        }
+        
+        params.per_page = perPage;
+        
+        router.get("/cch/review", params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handlePerPageChange = (newPerPage) => {
+        setPerPage(newPerPage);
+        const params = {};
+        
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        
+        if (selectedArea && selectedArea !== "all") {
+            params.area_id = selectedArea;
+        }
+        
+        if (selectedCategory && selectedCategory !== "all") {
+            params.category_id = selectedCategory;
+        }
+        
+        if (searchQuery) {
+            params.search = searchQuery;
+        }
+        
+        params.per_page = newPerPage;
+        
+        router.get("/cch/review", params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleResetFilter = () => {
+        setSelectedArea("all");
+        setSelectedCategory("all");
+        setStatusFilter("");
+        setSearchQuery("");
+        router.get("/cch/review", {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const getDownloadUrl = (documentId) => `/cch/download-document/${documentId}`;
+    
+    const notifyDownload = () => {
+        toast.success("Download Berhasil", {
+            description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
+            duration: 3000,
+        });
+    };
+
+    const getPreviewUrl = (doc) => {
+        if (!doc || !doc.id) return null;
+        return `/cch/preview-document/${doc.id}`;
     };
 
     const openReviewModal = (document) => {
@@ -46,6 +249,13 @@ export default function Review({ auth, documents, areas, categories, filters }) 
     const handleSaveReview = () => {
         if (!selectedDocument) return;
 
+        if (!selectedStatus) {
+            toast.error("Pilih status terlebih dahulu", {
+                duration: 3000,
+            });
+            return;
+        }
+
         router.post(
             `/cch/update-status/${selectedDocument.id}`,
             {
@@ -54,7 +264,17 @@ export default function Review({ auth, documents, areas, categories, filters }) 
             },
             {
                 onSuccess: () => {
+                    toast.success("Review berhasil disimpan", {
+                        description: "Status dokumen telah diperbarui.",
+                        duration: 3000,
+                    });
                     closeReviewModal();
+                },
+                onError: (errors) => {
+                    toast.error("Gagal menyimpan review", {
+                        description: errors.message || "Terjadi kesalahan saat menyimpan review.",
+                        duration: 3000,
+                    });
                 },
             }
         );
@@ -84,6 +304,20 @@ export default function Review({ auth, documents, areas, categories, filters }) 
 
     return (
         <CCHLayout>
+            <Toaster
+                position="top-right"
+                expand={true}
+                richColors
+                closeButton
+                toastOptions={{
+                    style: {
+                        padding: "16px",
+                        borderRadius: "12px",
+                        fontSize: "14px",
+                    },
+                    className: "sonner-toast",
+                }}
+            />
             <div className="h-full">
                 {/* Header Section */}
                 <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-xl p-8 mb-6">
@@ -111,51 +345,179 @@ export default function Review({ auth, documents, areas, categories, filters }) 
                     </h2>
 
                     {/* Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Area
-                            </label>
-                            <select
-                                value={selectedArea}
-                                onChange={(e) => setSelectedArea(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            >
-                                <option value="all">All Areas</option>
-                                {areas.map((area) => (
-                                    <option key={area.id} value={area.id}>
-                                        {area.nama}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b-2 border-blue-100 mb-6 rounded-xl">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div className="md:col-span-3">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Status
+                                </label>
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => handleStatusChange(e.target.value)}
+                                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                >
+                                    <option value="">All Status</option>
+                                    {statuses && statuses.map((status) => (
+                                        <option key={status} value={status}>
+                                            {status}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Kategori
-                            </label>
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            >
-                                <option value="all">All Categories</option>
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.nama}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                            <div className="md:col-span-3">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Area
+                                </label>
+                                <select
+                                    value={selectedArea}
+                                    onChange={(e) => handleAreaChange(e.target.value)}
+                                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                >
+                                    <option value="all">All Areas</option>
+                                    {areas && areas.map((area) => (
+                                        <option key={area.id} value={area.id}>
+                                            {area.nama}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                        <div className="flex items-end">
-                            <button
-                                onClick={applyFilter}
-                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                            >
-                                <FiFilter className="text-xl" />
-                                Apply Filter
-                            </button>
+                            <div className="md:col-span-3">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Kategori
+                                </label>
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => handleCategoryChange(e.target.value)}
+                                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                >
+                                    <option value="all">All Categories</option>
+                                    {categories && categories.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.nama}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-3">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Cari Judul
+                                </label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleSearch();
+                                                }
+                                            }}
+                                            placeholder="Cari judul dokumen..."
+                                            className="w-full pl-12 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleSearch}
+                                        className="px-4 py-2.5 bg-gradient-to-r from-blue-900 to-blue-800 text-white font-semibold rounded-xl hover:from-blue-800 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center"
+                                        title="Cari"
+                                    >
+                                        <FiSearch className="text-lg" />
+                                    </button>
+                                    {(statusFilter || (selectedArea && selectedArea !== "all") || (selectedCategory && selectedCategory !== "all") || searchQuery) && (
+                                        <button
+                                            onClick={handleResetFilter}
+                                            className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-300 text-sm whitespace-nowrap"
+                                            title="Reset Filter"
+                                        >
+                                            Reset
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b-2 border-blue-100 mb-6 rounded-xl">
+                        <div className="flex flex-col md:flex-row items-center justify-end gap-4">
+                            {/* Per Page Selector */}
+                            <div className="flex items-center gap-3">
+                                <label className="text-sm font-semibold text-gray-700">
+                                    Tampilkan:
+                                </label>
+                                <select
+                                    value={perPage}
+                                    onChange={(e) => handlePerPageChange(Number(e.target.value))}
+                                    className="px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </div>
+
+                            {/* Pagination Info and Controls */}
+                            {documents?.data && documents.data.length > 0 ? (
+                                <>
+                                    <p className="text-sm font-semibold text-gray-700">
+                                        {documents.from} - {documents.to} dari {documents.total}
+                                    </p>
+                                    {documents.last_page > 1 && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    const params = { page: documents.current_page - 1 };
+                                                    if (statusFilter) params.status = statusFilter;
+                                                    if (selectedArea && selectedArea !== "all") params.area_id = selectedArea;
+                                                    if (selectedCategory && selectedCategory !== "all") params.category_id = selectedCategory;
+                                                    if (searchQuery) params.search = searchQuery;
+                                                    params.per_page = perPage;
+                                                    router.get("/cch/review", params, {
+                                                        preserveState: true,
+                                                        preserveScroll: true,
+                                                    });
+                                                }}
+                                                disabled={documents.current_page === 1}
+                                                className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700"
+                                            >
+                                                Previous
+                                            </button>
+                                            <span className="px-4 py-2 bg-blue-900 text-white rounded-xl font-semibold">
+                                                {documents.current_page} / {documents.last_page}
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    const params = { page: documents.current_page + 1 };
+                                                    if (statusFilter) params.status = statusFilter;
+                                                    if (selectedArea && selectedArea !== "all") params.area_id = selectedArea;
+                                                    if (selectedCategory && selectedCategory !== "all") params.category_id = selectedCategory;
+                                                    if (searchQuery) params.search = searchQuery;
+                                                    params.per_page = perPage;
+                                                    router.get("/cch/review", params, {
+                                                        preserveState: true,
+                                                        preserveScroll: true,
+                                                    });
+                                                }}
+                                                disabled={documents.current_page === documents.last_page}
+                                                className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-sm font-semibold text-gray-700">
+                                    {documents?.total || 0} dokumen
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -174,14 +536,16 @@ export default function Review({ auth, documents, areas, categories, filters }) 
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {documents.length > 0 ? (
-                                    documents.map((doc, index) => (
+                                {documents?.data && documents.data.length > 0 ? (
+                                    documents.data.map((doc, index) => {
+                                        const rowNumber = (documents.current_page - 1) * documents.per_page + index + 1;
+                                        return (
                                         <tr
                                             key={doc.id}
                                             className="hover:bg-blue-50 transition-colors"
                                         >
                                             <td className="px-6 py-4 text-sm text-gray-700">
-                                                {index + 1}
+                                                {rowNumber}
                                             </td>
                                             <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                                                 {doc.judul}
@@ -214,17 +578,19 @@ export default function Review({ auth, documents, areas, categories, filters }) 
                                                     >
                                                         <FiEdit className="text-lg" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleDownload(doc.id)}
+                                                    <a
+                                                        href={getDownloadUrl(doc.id)}
+                                                        onClick={notifyDownload}
                                                         className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all"
                                                         title="Download"
                                                     >
                                                         <FiDownload className="text-lg" />
-                                                    </button>
+                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td
@@ -235,8 +601,14 @@ export default function Review({ auth, documents, areas, categories, filters }) 
                                                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                                     <FiEdit className="text-4xl text-gray-400" />
                                                 </div>
-                                                <p className="text-lg font-semibold">
-                                                    No documents available for review
+                                                <p className="text-lg font-semibold text-gray-600 mb-1">
+                                                    No Documents Found
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    {(statusFilter || (selectedArea && selectedArea !== "all") || (selectedCategory && selectedCategory !== "all") || searchQuery) 
+                                                        ? "No documents match your filter criteria"
+                                                        : "No documents available for review"
+                                                    }
                                                 </p>
                                             </div>
                                         </td>
@@ -264,20 +636,35 @@ export default function Review({ auth, documents, areas, categories, filters }) 
                         <div className="p-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Document Preview */}
-                                <div>
-                                    <div className="border-2 border-gray-200 rounded-xl p-8 h-80 flex items-center justify-center bg-gray-50">
-                                        <div className="text-center">
-                                            <div className="text-6xl font-black text-gray-800 mb-2">
-                                                DOKUMEN
-                                            </div>
-                                            <div className="text-5xl font-black text-gray-800">
-                                                MEMO
-                                            </div>
-                                            <div className="mt-4 text-sm text-gray-600">
-                                                {selectedDocument.judul}
-                                            </div>
+                                <div className="bg-gray-50 rounded-xl p-2.5 border-2 border-gray-200 flex flex-col">
+                                    <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                        <FiFile className="text-blue-900" /> Preview Dokumen
+                                    </h4>
+                                    {getPreviewUrl(selectedDocument) ? (
+                                        <div className="w-full flex-1 min-h-[400px] border rounded-lg overflow-hidden bg-white">
+                                            <iframe
+                                                title="Document Preview"
+                                                src={`${getPreviewUrl(selectedDocument)}#toolbar=0&navpanes=0`}
+                                                className="w-full h-full"
+                                                style={{
+                                                    display: 'block',
+                                                    border: 'none',
+                                                    margin: 0,
+                                                    padding: 0
+                                                }}
+                                                scrolling="yes"
+                                                frameBorder="0"
+                                            ></iframe>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="w-full flex-1 min-h-[400px] flex flex-col items-center justify-center text-center text-gray-500 bg-white rounded-lg border border-dashed">
+                                            <FiFile className="text-4xl mb-2" />
+                                            <p className="text-sm">Belum ada dokumen untuk dipreview</p>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        File: {selectedDocument.file_name || "-"}
+                                    </p>
                                 </div>
 
                                 {/* Notes and Label */}

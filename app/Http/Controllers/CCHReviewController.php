@@ -17,18 +17,15 @@ class CCHReviewController extends Controller
     {
         $user = Auth::user();
         
+        // Get filter parameters
+        $statusFilter = $request->input('status');
+        $categoryFilter = $request->input('category_id');
+        $areaFilter = $request->input('area_id');
+        $searchQuery = $request->input('search');
+        $perPage = $request->input('per_page', 10); // Default 10 items per page
+        
         // Build query
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
-        
-        // Filter by area if provided
-        if ($request->filled('area_id') && $request->area_id !== 'all') {
-            $query->where('area_id', $request->area_id);
-        }
-        
-        // Filter by category if provided
-        if ($request->filled('category_id') && $request->category_id !== 'all') {
-            $query->where('category_id', $request->category_id);
-        }
         
         // Filter by status - CCH only sees documents that are "Accept by MO" or higher
         $query->whereIn('status', [
@@ -37,11 +34,39 @@ class CCHReviewController extends Controller
             'Accept by CCH'
         ]);
         
-        $documents = $query->orderBy('created_at', 'desc')->get();
+        // Apply search filter if provided
+        if ($searchQuery) {
+            $query->where('judul', 'like', '%' . $searchQuery . '%');
+        }
+        
+        // Apply status filter if provided
+        if ($statusFilter) {
+            $query->where('status', $statusFilter);
+        }
+        
+        // Filter by area if provided
+        if ($areaFilter && $areaFilter !== 'all') {
+            $query->where('area_id', $areaFilter);
+        }
+        
+        // Filter by category if provided
+        if ($categoryFilter && $categoryFilter !== 'all') {
+            $query->where('category_id', $categoryFilter);
+        }
+        
+        // Get documents ordered by latest with pagination
+        $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
         // Get all areas and categories for filters
-        $areas = Area::all();
-        $categories = Category::all();
+        $areas = Area::select('id', 'nama')->get();
+        $categories = Category::select('id', 'nama')->get();
+        
+        // Get all unique statuses for filter dropdown (CCH specific statuses)
+        $statuses = [
+            'Accept by MO',
+            'Revision by CCH',
+            'Accept by CCH'
+        ];
         
         return Inertia::render("CCH/Review/page", [
             'auth' => [
@@ -59,9 +84,13 @@ class CCHReviewController extends Controller
             'documents' => $documents,
             'areas' => $areas,
             'categories' => $categories,
+            'statuses' => $statuses,
             'filters' => [
-                'area_id' => $request->area_id,
-                'category_id' => $request->category_id,
+                'area_id' => $areaFilter,
+                'category_id' => $categoryFilter,
+                'status' => $statusFilter,
+                'search' => $searchQuery,
+                'per_page' => $perPage,
             ]
         ]);
     }
@@ -102,11 +131,57 @@ class CCHReviewController extends Controller
     {
         $document = Document::findOrFail($id);
         
-        // Check if file exists
-        if (!Storage::exists($document->file_path)) {
+        $filePath = storage_path('app/public/' . $document->file_path);
+        
+        if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'File not found');
         }
         
-        return Storage::download($document->file_path, $document->file_name);
+        // Get the correct extension
+        $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
+        
+        // Set proper content type based on file extension
+        $contentType = match($extension) {
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => 'application/octet-stream',
+        };
+        
+        return response()->download($filePath, $document->file_name, [
+            'Content-Type' => $contentType,
+        ]);
+    }
+
+    public function preview($id)
+    {
+        $document = Document::findOrFail($id);
+        
+        // CCH can preview documents that are "Accept by MO" or higher
+        if (!in_array($document->status, ['Accept by MO', 'Revision by CCH', 'Accept by CCH'])) {
+            abort(403, 'Document is not available for preview');
+        }
+        
+        $filePath = storage_path('app/public/' . $document->file_path);
+        
+        if (!file_exists($filePath)) {
+            abort(404, 'File not found');
+        }
+        
+        // Get the correct extension
+        $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
+        
+        // Set proper content type based on file extension
+        $contentType = match($extension) {
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => 'application/octet-stream',
+        };
+        
+        return response()->file($filePath, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+        ]);
     }
 }
