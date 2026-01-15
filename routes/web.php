@@ -19,6 +19,11 @@ use Inertia\Inertia;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
 */
 
 // Guest routes (not authenticated)
@@ -36,9 +41,9 @@ Route::get('/', function () {
         } elseif ($user->role === 'AMO Region') {
             return redirect()->route('amo-region.home');
         } elseif ($user->role === 'MO') {
-            return redirect()->route('mo.review');
+            return redirect()->route('mo.home');
         } elseif ($user->role === 'CCH') {
-            return redirect()->route('cch.review'); // CCH langsung ke review
+            return redirect()->route('cch.home');
         } 
     }
     return redirect()->route('login');
@@ -50,35 +55,56 @@ Route::middleware('auth')->group(function () {
 
     // AMO Area routes
     Route::middleware('role:AMO Area')->prefix('amo-area')->name('amo-area.')->group(function () {
+        // Home
         Route::get('/home', [AreaHomeController::class, 'index'])->name('home');
-        Route::post('/update-document/{id}', [AreaHomeController::class, 'update'])->name('update-document');
-        Route::get('/download-document/{id}', [AreaHomeController::class, 'download'])->name('download-document');
-        Route::get('/upload-document', [AreaUploadController::class, 'index'])->name('upload-document');
-        Route::post('/upload-document', [AreaUploadController::class, 'store'])->name('upload-document.store');
+        
+        // Document Actions
+            Route::post('/update-document/{id}', [AreaHomeController::class, 'update'])->name('update-document');
+            Route::get('/download-document/{id}', [AreaHomeController::class, 'download'])->name('download-document');
+            Route::get('/preview-document/{id}', [AreaHomeController::class, 'preview'])->name('preview-document');
+
+            Route::get('/upload-document', [AreaUploadController::class, 'index'])->name('upload-document');
+            Route::post('/upload-document', [AreaUploadController::class, 'store'])->name('upload-document.store');
     });
 
     // AMO Region routes
     Route::middleware('role:AMO Region')->prefix('amo-region')->name('amo-region.')->group(function () {
+        // Home
         Route::get('/home', [RegionHomeController::class, 'index'])->name('home');
+        
+        // Document Actions
+        Route::post('/update-document/{id}', [RegionHomeController::class, 'update'])->name('update-document');
+        Route::get('/download-document/{id}', [RegionHomeController::class, 'download'])->name('download-document');
+        Route::get('/preview-document/{id}', [RegionHomeController::class, 'preview'])->name('preview-document');
+        
+        // Upload Document
         Route::get('/upload-document', [RegionUploadController::class, 'index'])->name('upload-document');
+        Route::post('/upload-document', [RegionUploadController::class, 'store'])->name('upload-document.store');
+        
+        // Review
         Route::get('/review', [RegionReviewController::class, 'index'])->name('review');
     });
 
     // MO routes
     Route::middleware('role:MO')->prefix('mo')->name('mo.')->group(function () {
+        // Review
         Route::get('/review', [MOReviewController::class, 'index'])->name('review');
+        
+        // Upload Signa`ture
         Route::get('/upload-signature', [MOUploadSignController::class, 'index'])->name('upload-signature');
+        
+        // Manage Account
         Route::get('/manage-account', [MOManageAccountController::class, 'index'])->name('manage-account');
     });
 
     // CCH routes
     Route::middleware('role:CCH')->prefix('cch')->name('cch.')->group(function () {
-        // Review (default page for CCH)
+        // Review
         Route::get('/review', [CCHReviewController::class, 'index'])->name('review');
-        Route::post('/update-status/{id}', [CCHReviewController::class, 'updateStatus'])->name('update-status');
-        Route::get('/download-document/{id}', [CCHReviewController::class, 'download'])->name('download-document');
         
         // Upload Signature
         Route::get('/upload-signature', [CCHUploadSignController::class, 'index'])->name('upload-signature');
+        Route::get('/preview-document/{id}', [CCHUploadSignController::class, 'preview'])->name('preview-document');
+        Route::post('/upload-signature', [CCHUploadSignController::class, 'store'])->name('upload-signature.store');
     });
 });

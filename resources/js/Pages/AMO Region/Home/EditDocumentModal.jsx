@@ -11,7 +11,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
     const getPreviewUrl = (doc, cacheBuster = null) => {
         if (!doc || !doc.id) return null;
         // Gunakan endpoint preview yang sudah ada
-        let url = `/amo-area/preview-document/${doc.id}`;
+        let url = `/amo-region/preview-document/${doc.id}`;
         // Tambahkan cache buster jika ada file baru
         if (cacheBuster) {
             url += `?t=${cacheBuster}`;
@@ -165,7 +165,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
             formData.append("file", data.file);
         }
 
-        router.post(`/amo-area/update-document/${document.id}`, formData, {
+        router.post(`/amo-region/update-document/${document.id}`, formData, {
             preserveScroll: true,
             preserveState: false,
             forceFormData: true,
@@ -360,8 +360,11 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                             </label>
                                             <select
                                                 value={data.area_id}
-                                                disabled
-                                                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
+                                                onChange={(e) => setData("area_id", e.target.value)}
+                                                disabled={!canEdit}
+                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
+                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+                                                }`}
                                             >
                                                 {areas.map((area) => (
                                                     <option key={area.id} value={area.id}>

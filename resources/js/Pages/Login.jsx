@@ -1,19 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { useForm } from "@inertiajs/react";
+import React, { useState, useEffect, useRef } from "react";
+import { router, usePage } from "@inertiajs/react";
+import { toast, Toaster } from "sonner";
 
 export default function Login() {
+    const { errors: pageErrors, flash } = usePage().props;
     const [showPassword, setShowPassword] = useState(false);
+    const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
-    const { data, setData, post, processing, errors } = useForm({
+    const [formData, setFormData] = useState({
         email: "",
         password: "",
     });
+    const errorShownRef = useRef(false);
+    const errorTimeoutRef = useRef(null);
 
+    // Check for errors from page props (after redirect)
     useEffect(() => {
-        if (errors.email || errors.password) {
-            setValidationErrors({});
+        // Clear timeout sebelumnya jika ada
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+            errorTimeoutRef.current = null;
         }
-    }, [errors]);
+
+        // Cek apakah ada error dari pageErrors atau flash
+        const hasPageError = pageErrors && Object.keys(pageErrors).length > 0;
+        const hasFlashError = flash && flash.error;
+        
+        if (!hasPageError && !hasFlashError) {
+            // Reset flag jika tidak ada error
+            errorShownRef.current = false;
+            return;
+        }
+        
+        // Hanya tampilkan jika belum pernah ditampilkan
+        if (!errorShownRef.current) {
+            errorShownRef.current = true;
+            
+            // Prioritaskan error dari pageErrors, jika tidak ada gunakan flash.error
+            let errorMessage = "Email atau Password Salah";
+            if (hasPageError) {
+                errorMessage = pageErrors.email || pageErrors.password || Object.values(pageErrors)[0] || errorMessage;
+            } else if (hasFlashError) {
+                errorMessage = flash.error;
+            }
+            
+            // Gunakan timeout untuk debounce dan memastikan hanya satu toast
+            errorTimeoutRef.current = setTimeout(() => {
+                toast.error("Login Gagal", {
+                    description: errorMessage,
+                    duration: 5000,
+                });
+            }, 50);
+        }
+
+        // Cleanup
+        return () => {
+            if (errorTimeoutRef.current) {
+                clearTimeout(errorTimeoutRef.current);
+            }
+        };
+    }, [pageErrors, flash]);
 
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,13 +69,13 @@ export default function Login() {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!data.email.trim()) {
+        if (!formData.email.trim()) {
             newErrors.email = "Email tidak boleh kosong";
-        } else if (!validateEmail(data.email)) {
+        } else if (!validateEmail(formData.email)) {
             newErrors.email = "Format email tidak valid";
         }
 
-        if (!data.password.trim()) {
+        if (!formData.password.trim()) {
             newErrors.password = "Password tidak boleh kosong";
         }
 
@@ -40,11 +86,47 @@ export default function Login() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        // Validasi client-side
         if (!validateForm()) {
             return;
         }
 
-        post("/actionLogin");
+        setProcessing(true);
+        errorShownRef.current = false; // Reset flag on new submit
+        const formDataToSend = new FormData();
+        formDataToSend.append('email', formData.email);
+        formDataToSend.append('password', formData.password);
+
+        router.post("/actionLogin", formDataToSend, {
+            onError: (errors) => {
+                setProcessing(false);
+                // Jangan tampilkan toast di sini, biarkan useEffect yang handle
+                // Karena setelah redirect, error akan tersedia di pageErrors atau flash
+                hasShownError.current = false; // Reset agar useEffect bisa trigger
+            },
+            onSuccess: () => {
+                setProcessing(false);
+            },
+            onFinish: () => {
+                setProcessing(false);
+            },
+        });
+    };
+
+    const handleEmailChange = (e) => {
+        const value = e.target.value;
+        setFormData((prev) => ({ ...prev, email: value }));
+        if (validationErrors.email) {
+            setValidationErrors((prev) => ({ ...prev, email: "" }));
+        }
+    };
+
+    const handlePasswordChange = (e) => {
+        const value = e.target.value;
+        setFormData((prev) => ({ ...prev, password: value }));
+        if (validationErrors.password) {
+            setValidationErrors((prev) => ({ ...prev, password: "" }));
+        }
     };
 
     const handleKeyPress = (e) => {
@@ -53,22 +135,23 @@ export default function Login() {
         }
     };
 
-    const handleEmailChange = (e) => {
-        setData("email", e.target.value);
-        if (validationErrors.email) {
-            setValidationErrors((prev) => ({ ...prev, email: "" }));
-        }
-    };
-
-    const handlePasswordChange = (e) => {
-        setData("password", e.target.value);
-        if (validationErrors.password) {
-            setValidationErrors((prev) => ({ ...prev, password: "" }));
-        }
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 flex items-center justify-center p-4">
+        <>
+            <Toaster
+                position="top-right"
+                expand={true}
+                richColors
+                closeButton
+                toastOptions={{
+                    style: {
+                        padding: "16px",
+                        borderRadius: "12px",
+                        fontSize: "14px",
+                    },
+                    className: "sonner-toast",
+                }}
+            />
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 flex items-center justify-center p-4 relative">
             {/* Background Decorative Elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
@@ -111,34 +194,7 @@ export default function Login() {
 
                     {/* Form Section */}
                     <div className="px-8 py-8">
-                        {/* Error Message - Email atau Password Salah dari Server */}
-                        {(errors.email || errors.password) && (
-                            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                                <div className="flex items-start">
-                                    <svg
-                                        className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0"
-                                        fill="currentColor"
-                                        viewBox="0 0 20 20"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-red-800">
-                                            Login Gagal
-                                        </h3>
-                                        <p className="text-sm text-red-700 mt-1">
-                                            {errors.email || errors.password}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Email Input */}
                             <div>
                                 <label
@@ -165,8 +221,9 @@ export default function Login() {
                                     </div>
                                     <input
                                         id="email"
+                                        name="email"
                                         type="email"
-                                        value={data.email}
+                                        value={formData.email}
                                         onChange={handleEmailChange}
                                         onKeyPress={handleKeyPress}
                                         className={`w-full pl-12 pr-4 py-3.5 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all ${
@@ -221,10 +278,9 @@ export default function Login() {
                                     </div>
                                     <input
                                         id="password"
-                                        type={
-                                            showPassword ? "text" : "password"
-                                        }
-                                        value={data.password}
+                                        name="password"
+                                        type={showPassword ? "text" : "password"}
+                                        value={formData.password}
                                         onChange={handlePasswordChange}
                                         onKeyPress={handleKeyPress}
                                         className={`w-full pl-12 pr-12 py-3.5 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all ${
@@ -298,8 +354,7 @@ export default function Login() {
 
                             {/* Submit Button */}
                             <button
-                                type="button"
-                                onClick={handleSubmit}
+                                type="submit"
                                 disabled={processing}
                                 className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                             >
@@ -345,10 +400,11 @@ export default function Login() {
                                     </>
                                 )}
                             </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+        </>
     );
 }
