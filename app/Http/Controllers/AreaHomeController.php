@@ -19,10 +19,17 @@ class AreaHomeController extends Controller
         // Get filter parameters
         $statusFilter = $request->input('status');
         $categoryFilter = $request->input('category');
+        $searchQuery = $request->input('search');
+        $perPage = $request->input('per_page', 10); // Default 10 items per page
         
         // Build query for documents belonging to user's area
         $query = Document::with(['category', 'area', 'user'])
             ->where('user_id', $user->id);
+        
+        // Apply search filter if provided
+        if ($searchQuery) {
+            $query->where('judul', 'like', '%' . $searchQuery . '%');
+        }
         
         // Apply status filter if provided
         if ($statusFilter) {
@@ -34,8 +41,8 @@ class AreaHomeController extends Controller
             $query->where('category_id', $categoryFilter);
         }
         
-        // Get documents ordered by latest
-        $documents = $query->orderBy('created_at', 'desc')->get();
+        // Get documents ordered by latest with pagination
+        $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
         // Get all categories and areas for dropdowns
         $categories = Category::select('id', 'nama')->get();
@@ -73,6 +80,8 @@ class AreaHomeController extends Controller
             'filters' => [
                 'status' => $statusFilter,
                 'category' => $categoryFilter,
+                'search' => $searchQuery,
+                'per_page' => $perPage,
             ]
         ]);
     }
@@ -88,18 +97,30 @@ class AreaHomeController extends Controller
 
         $request->validate([
             'judul' => 'required|string|max:255',
+            'periode_mulai' => 'required|date',
+            'periode_selesai' => 'required|date|after_or_equal:periode_mulai',
             'category_id' => 'required|exists:categories,id',
             'area_id' => 'required|exists:areas,id',
-            'file' => 'nullable|file|mimes:doc,docx,pdf|max:10240',
+            'file' => 'nullable|file|mimes:pdf|max:10240',
             'notes' => 'nullable|string',
+            'status' => 'nullable|string',
         ]);
 
         $updateData = [
             'judul' => $request->judul,
+            'periode_mulai' => $request->periode_mulai,
+            'periode_selesai' => $request->periode_selesai,
             'category_id' => $request->category_id,
             'area_id' => $request->area_id,
             'notes' => $request->notes,
         ];
+
+        // Handle status update if provided
+        if ($request->has('status')) {
+            $statusValue = $request->input('status');
+            $finalStatus = ($statusValue === 'On Process') ? 'On Process' : 'Draft';
+            $updateData['status'] = $finalStatus;
+        }
 
         // Handle file upload if new file is provided
         if ($request->hasFile('file')) {
@@ -120,6 +141,7 @@ class AreaHomeController extends Controller
 
         $document->update($updateData);
 
+        // Preserve query parameters when redirecting back
         return redirect()->back()->with('success', 'Document updated successfully!');
     }
 
@@ -151,6 +173,38 @@ class AreaHomeController extends Controller
         
         return response()->download($filePath, $document->file_name, [
             'Content-Type' => $contentType,
+        ]);
+    }
+
+    public function preview($id)
+    {
+        $document = Document::findOrFail($id);
+        
+        // Check if user owns this document
+        if ($document->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access');
+        }
+        
+        $filePath = storage_path('app/public/' . $document->file_path);
+        
+        if (!file_exists($filePath)) {
+            abort(404, 'File not found');
+        }
+        
+        // Get the correct extension
+        $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
+        
+        // Set proper content type based on file extension
+        $contentType = match($extension) {
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => 'application/octet-stream',
+        };
+        
+        return response()->file($filePath, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
         ]);
     }
 }

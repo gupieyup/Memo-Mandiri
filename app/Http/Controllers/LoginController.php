@@ -20,18 +20,12 @@ class LoginController extends Controller
 
     public function actionLogin(Request $request)
     {
-        // Validasi input
-        $request->validate([
-            'email' => 'required|string',
-            'password' => 'required|string',
-        ]);
-
-        $credentials = [
+        $data = [
             'email' => $request->input('email'),
             'password' => $request->input('password'),
         ];
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($data)) {
             $request->session()->regenerate();
 
             // Flash message sukses
@@ -50,12 +44,8 @@ class LoginController extends Controller
         }
 
         // Jika login gagal, return dengan error
-        return back()
-            ->withErrors([
-                'email' => 'Email atau password yang Anda masukkan salah.',
-            ])
-            ->withInput($request->only('email'))
-            ->with('error', 'Login gagal. Silakan periksa kembali email dan password Anda.');
+        Session::flash('error', 'Email atau Password Salah');
+        return back()->withErrors(['email' => 'Email atau Password Salah'])->withInput();
     }
 
     public function actionLogout(Request $request)

@@ -40,34 +40,77 @@ class AreaUploadController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        // Validate the request (tanpa memaksa status, supaya insert tidak gagal)
+        $validated = $request->validate([
             'judul' => 'required|string|max:255',
             'periode_mulai' => 'required|date',
             'periode_selesai' => 'required|date|after_or_equal:periode_mulai',
             'area_id' => 'required|exists:areas,id',
             'category_id' => 'required|exists:categories,id',
-            'file' => 'required|file|mimes:doc,docx,pdf|max:10240', // 10MB max
-            'status' => 'required|in:Draft,On Process',
+            'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+        ], [
+            'judul.required' => 'Judul harus diisi',
+            'periode_mulai.required' => 'Periode mulai harus diisi',
+            'periode_selesai.required' => 'Periode selesai harus diisi',
+            'periode_selesai.after_or_equal' => 'Periode selesai harus setelah atau sama dengan periode mulai',
+            'area_id.required' => 'Area harus dipilih',
+            'category_id.required' => 'Kategori merchant harus dipilih',
+            'file.required' => 'File dokumen harus diupload',
+            'file.mimes' => 'File harus berformat PDF',
+            'file.max' => 'Ukuran file maksimal 10MB',
         ]);
 
-        $file = $request->file('file');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('documents', $fileName, 'public');
 
-        $document = Document::create([
-            'judul' => $request->judul,
-            'periode_mulai' => $request->periode_mulai,
-            'periode_selesai' => $request->periode_selesai,
-            'status' => $request->status,
-            'file_name' => $fileName,
-            'file_path' => $filePath,
-            'file_size' => $file->getSize(),
-            'file_type' => $file->getClientMimeType(),
-            'area_id' => $request->area_id,
-            'category_id' => $request->category_id,
-            'user_id' => Auth::id(),
-        ]);
+        try {
+            // Tentukan status akhir berdasarkan input tombol
+            // Debug: log status yang diterima dari berbagai sumber
+            $requestedStatus = $request->input('status');
+            $requestedStatusGet = $request->get('status');
+            $requestedStatusPost = $request->post('status');
+            $allInput = $request->all();
+            
+            // Gunakan input() terlebih dahulu, jika tidak ada coba get/post
+            $statusValue = $requestedStatus ?? $requestedStatusGet ?? $requestedStatusPost ?? null;
+            
+            // Jika value tepat 'On Process' maka On Process, selain itu jadikan Draft
+            $finalStatus = ($statusValue === 'On Process') ? 'On Process' : 'Draft';
+            
+            // Handle file upload
+            $file = $request->file('file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('documents', $fileName, 'public');
 
-        return redirect()->back()->with('success', 'Document uploaded successfully!');
+            // Create document record
+            $document = Document::create([
+                'judul' => $validated['judul'],
+                'periode_mulai' => $validated['periode_mulai'],
+                'periode_selesai' => $validated['periode_selesai'],
+                'status' => $finalStatus,
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'file_size' => $file->getSize(),
+                'file_type' => $file->getClientMimeType(),
+                'area_id' => $validated['area_id'],
+                'category_id' => $validated['category_id'],
+                'user_id' => Auth::id(),
+            ]);
+
+            // Return success response
+            return redirect()->back()->with('success', 
+                $finalStatus === 'Draft' 
+                    ? 'Dokumen berhasil disimpan sebagai draft!' 
+                    : 'Dokumen berhasil diupload!'
+            );
+
+        } catch (\Exception $e) {
+            // If file was uploaded, delete it
+            if (isset($filePath) && Storage::disk('public')->exists($filePath)) {
+                Storage::disk('public')->delete($filePath);
+            }
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Terjadi kesalahan saat menyimpan dokumen: ' . $e->getMessage()])
+                ->withInput();
+        }
     }
 }
