@@ -320,21 +320,16 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             />
             <div className="h-full">
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-xl p-8 mb-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-4xl font-extrabold text-white mb-2">
-                                Review Time
-                            </h1>
-                            <p className="text-blue-200 text-lg">
-                                Take a quick look before moving forward.
-                            </p>
-                        </div>
-                        <div className="hidden md:block">
-                            <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg">
-                                <FiEdit className="text-4xl text-white" />
-                            </div>
-                        </div>
+                <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-2xl p-5 mb-5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400 opacity-10 rounded-full -mr-48 -mt-48"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-300 opacity-10 rounded-full -ml-32 -mb-32"></div>
+                    <div className="relative z-10">
+                        <h1 className="text-2xl font-extrabold text-white mb-2">
+                            Review Time
+                        </h1>
+                        <p className="text-blue-100 text-md">
+                            Take a quick look before moving forward.
+                        </p>
                     </div>
                 </div>
 

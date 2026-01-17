@@ -17,6 +17,13 @@ export default function ManageAccount({ auth, users, areas }) {
         area_id: "",
         area_ids: [],
     });
+    const [errors, setErrors] = useState({
+        nama: "",
+        email: "",
+        password: "",
+        area_id: "",
+        area_ids: "",
+    });
 
     // Show toast notifications for flash messages
     useEffect(() => {
@@ -42,6 +49,13 @@ export default function ManageAccount({ auth, users, areas }) {
             area_id: "",
             area_ids: [],
         });
+        setErrors({
+            nama: "",
+            email: "",
+            password: "",
+            area_id: "",
+            area_ids: "",
+        });
         setShowModal(true);
     };
 
@@ -57,6 +71,13 @@ export default function ManageAccount({ auth, users, areas }) {
                 const area = areas.find(a => a.nama === areaName);
                 return area ? area.id : null;
             }).filter(id => id !== null) : [],
+        });
+        setErrors({
+            nama: "",
+            email: "",
+            password: "",
+            area_id: "",
+            area_ids: "",
         });
         setShowModal(true);
     };
@@ -77,6 +98,13 @@ export default function ManageAccount({ auth, users, areas }) {
             area_id: "",
             area_ids: [],
         });
+        setErrors({
+            nama: "",
+            email: "",
+            password: "",
+            area_id: "",
+            area_ids: "",
+        });
     };
 
     const closeDeleteModal = () => {
@@ -84,21 +112,65 @@ export default function ManageAccount({ auth, users, areas }) {
         setSelectedUser(null);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const validateForm = () => {
+        const newErrors = {
+            nama: "",
+            email: "",
+            password: "",
+            area_id: "",
+            area_ids: "",
+        };
+        let isValid = true;
 
-        // Validation
+        // Validate name
+        if (!formData.nama.trim()) {
+            newErrors.nama = "Nama tidak boleh kosong";
+            isValid = false;
+        }
+
+        // Validate email
+        if (!formData.email.trim()) {
+            newErrors.email = "Email tidak boleh kosong";
+            isValid = false;
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                newErrors.email = "Format email tidak valid";
+                isValid = false;
+            }
+        }
+
+        // Validate password
+        if (!selectedUser && !formData.password.trim()) {
+            newErrors.password = "Password tidak boleh kosong";
+            isValid = false;
+        } else if (formData.password && formData.password.length < 6) {
+            newErrors.password = "Password minimal 6 karakter";
+            isValid = false;
+        }
+
+        // Validate area based on role (only for AMO Area and AMO Region)
         if (formData.role === "AMO Area" && !formData.area_id) {
-            toast.error("Please select an area", {
-                duration: 3000,
-            });
-            return;
+            newErrors.area_id = "Area harus dipilih";
+            isValid = false;
         }
 
         if (formData.role === "AMO Region" && formData.area_ids.length === 0) {
-            toast.error("Please select at least one area", {
-                duration: 3000,
-            });
+            newErrors.area_ids = "Pilih minimal satu area";
+            isValid = false;
+        }
+
+        // MO and CCH don't need area validation
+
+        setErrors(newErrors);
+        return isValid;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Validate form
+        if (!validateForm()) {
             return;
         }
 
@@ -114,9 +186,10 @@ export default function ManageAccount({ auth, users, areas }) {
 
         if (formData.role === "AMO Area") {
             submitData.area_id = formData.area_id;
-        } else {
+        } else if (formData.role === "AMO Region") {
             submitData.area_ids = formData.area_ids;
         }
+        // MO and CCH don't need area data
 
         if (selectedUser) {
             // Update
@@ -127,9 +200,17 @@ export default function ManageAccount({ auth, users, areas }) {
                 onSuccess: () => {
                     closeModal();
                 },
-                onError: (errors) => {
-                    if (errors.message) {
-                        toast.error(errors.message, {
+                onError: (serverErrors) => {
+                    const newErrors = {
+                        nama: serverErrors.nama ? serverErrors.nama[0] : "",
+                        email: serverErrors.email ? serverErrors.email[0] : "",
+                        password: serverErrors.password ? serverErrors.password[0] : "",
+                        area_id: serverErrors.area_id ? serverErrors.area_id[0] : "",
+                        area_ids: serverErrors.area_ids ? serverErrors.area_ids[0] : "",
+                    };
+                    setErrors(newErrors);
+                    if (serverErrors.message) {
+                        toast.error(serverErrors.message, {
                             duration: 3000,
                         });
                     }
@@ -141,9 +222,17 @@ export default function ManageAccount({ auth, users, areas }) {
                 onSuccess: () => {
                     closeModal();
                 },
-                onError: (errors) => {
-                    if (errors.message) {
-                        toast.error(errors.message, {
+                onError: (serverErrors) => {
+                    const newErrors = {
+                        nama: serverErrors.nama ? serverErrors.nama[0] : "",
+                        email: serverErrors.email ? serverErrors.email[0] : "",
+                        password: serverErrors.password ? serverErrors.password[0] : "",
+                        area_id: serverErrors.area_id ? serverErrors.area_id[0] : "",
+                        area_ids: serverErrors.area_ids ? serverErrors.area_ids[0] : "",
+                    };
+                    setErrors(newErrors);
+                    if (serverErrors.message) {
+                        toast.error(serverErrors.message, {
                             duration: 3000,
                         });
                     }
@@ -195,21 +284,16 @@ export default function ManageAccount({ auth, users, areas }) {
             />
             <div className="h-full">
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-xl p-8 mb-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-4xl font-extrabold text-white mb-2">
-                                The Crew
-                            </h1>
-                            <p className="text-blue-200 text-lg">
-                                Everything you need to manage user accounts.
-                            </p>
-                        </div>
-                        <div className="hidden md:block">
-                            <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg">
-                                <FiEdit className="text-4xl text-white" />
-                            </div>
-                        </div>
+                <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-2xl p-5 mb-5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400 opacity-10 rounded-full -mr-48 -mt-48"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-300 opacity-10 rounded-full -ml-32 -mb-32"></div>
+                    <div className="relative z-10">
+                        <h1 className="text-2xl font-extrabold text-white mb-2">
+                            The Crew
+                        </h1>
+                        <p className="text-blue-100 text-md">
+                            Everything you need to manage user accounts.
+                        </p>
                     </div>
                 </div>
 
@@ -262,10 +346,16 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 {user.password}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-700">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
                                                     user.role === 'AMO Area' 
                                                         ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                                        : 'bg-purple-100 text-purple-800 border border-purple-300'
+                                                        : user.role === 'AMO Region'
+                                                        ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                                        : user.role === 'MO'
+                                                        ? 'bg-green-100 text-green-800 border border-green-300'
+                                                        : user.role === 'CCH'
+                                                        ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                                        : 'bg-gray-100 text-gray-800 border border-gray-300'
                                                 }`}>
                                                     {user.role}
                                                 </span>
@@ -282,13 +372,15 @@ export default function ManageAccount({ auth, users, areas }) {
                                                     >
                                                         <FiEdit className="text-lg" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => openDeleteModal(user)}
-                                                        className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
-                                                        title="Delete"
-                                                    >
-                                                        <FiTrash2 className="text-lg" />
-                                                    </button>
+                                                    {!(user.role === 'MO' || user.role === 'CCH') && (
+                                                        <button
+                                                            onClick={() => openDeleteModal(user)}
+                                                            className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
+                                                            title="Delete"
+                                                        >
+                                                            <FiTrash2 className="text-lg" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -350,11 +442,20 @@ export default function ManageAccount({ auth, users, areas }) {
                                     <input
                                         type="text"
                                         value={formData.nama}
-                                        onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                                        required
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, nama: e.target.value });
+                                            if (errors.nama) {
+                                                setErrors({ ...errors, nama: "" });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                            errors.nama ? "border-red-500" : "border-gray-300"
+                                        }`}
                                         placeholder="Enter user name"
                                     />
+                                    {errors.nama && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.nama}</p>
+                                    )}
                                 </div>
 
                                 {/* Email */}
@@ -363,13 +464,22 @@ export default function ManageAccount({ auth, users, areas }) {
                                         Email <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        type="email"
+                                        type="text"
                                         value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        required
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, email: e.target.value });
+                                            if (errors.email) {
+                                                setErrors({ ...errors, email: "" });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                            errors.email ? "border-red-500" : "border-gray-300"
+                                        }`}
                                         placeholder="Enter email address"
                                     />
+                                    {errors.email && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                                    )}
                                 </div>
 
                                 {/* Password */}
@@ -380,12 +490,20 @@ export default function ManageAccount({ auth, users, areas }) {
                                     <input
                                         type="password"
                                         value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        required={!selectedUser}
-                                        minLength={6}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, password: e.target.value });
+                                            if (errors.password) {
+                                                setErrors({ ...errors, password: "" });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                            errors.password ? "border-red-500" : "border-gray-300"
+                                        }`}
                                         placeholder={selectedUser ? "Leave blank to keep current password" : "Enter password (min 6 characters)"}
                                     />
+                                    {errors.password && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                                    )}
                                 </div>
 
                                 {/* Role */}
@@ -403,25 +521,42 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 area_ids: [],
                                             });
                                         }}
+                                        disabled={selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')}
                                         required
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                            selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')
+                                                ? 'bg-gray-100 cursor-not-allowed opacity-60'
+                                                : ''
+                                        }`}
                                     >
                                         <option value="AMO Area">AMO Area</option>
                                         <option value="AMO Region">AMO Region</option>
+                                        {selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH') && (
+                                            <option value={selectedUser.role}>{selectedUser.role}</option>
+                                        )}
                                     </select>
+                                    {selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH') && (
+                                        <p className="text-xs text-gray-500 mt-1">Role tidak dapat diubah untuk user MO dan CCH</p>
+                                    )}
                                 </div>
 
                                 {/* Area Selection */}
-                                {formData.role === "AMO Area" ? (
+                                {formData.role === "AMO Area" && (
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                                             Area <span className="text-red-500">*</span>
                                         </label>
                                         <select
                                             value={formData.area_id}
-                                            onChange={(e) => setFormData({ ...formData, area_id: e.target.value })}
-                                            required
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, area_id: e.target.value });
+                                                if (errors.area_id) {
+                                                    setErrors({ ...errors, area_id: "" });
+                                                }
+                                            }}
+                                            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                errors.area_id ? "border-red-500" : "border-gray-300"
+                                            }`}
                                         >
                                             <option value="">Select Area</option>
                                             {areas && areas.map((area) => (
@@ -430,13 +565,19 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 </option>
                                             ))}
                                         </select>
+                                        {errors.area_id && (
+                                            <p className="text-red-500 text-xs mt-1">{errors.area_id}</p>
+                                        )}
                                     </div>
-                                ) : (
+                                )}
+                                {formData.role === "AMO Region" && (
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                                             Areas <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="border-2 border-gray-300 rounded-xl p-4 max-h-48 overflow-y-auto">
+                                        <div className={`border-2 rounded-xl p-4 max-h-48 overflow-y-auto ${
+                                            errors.area_ids ? "border-red-500" : "border-gray-300"
+                                        }`}>
                                             {areas && areas.length > 0 ? (
                                                 <div className="space-y-2">
                                                     {areas.map((area) => (
@@ -447,7 +588,12 @@ export default function ManageAccount({ auth, users, areas }) {
                                                             <input
                                                                 type="checkbox"
                                                                 checked={formData.area_ids.includes(area.id)}
-                                                                onChange={() => handleAreaIdsChange(area.id)}
+                                                                onChange={() => {
+                                                                    handleAreaIdsChange(area.id);
+                                                                    if (errors.area_ids) {
+                                                                        setErrors({ ...errors, area_ids: "" });
+                                                                    }
+                                                                }}
                                                                 className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                                             />
                                                             <span className="text-sm text-gray-700">{area.nama}</span>
@@ -458,8 +604,8 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 <p className="text-sm text-gray-500">No areas available</p>
                                             )}
                                         </div>
-                                        {formData.area_ids.length === 0 && (
-                                            <p className="text-xs text-red-500 mt-1">Please select at least one area</p>
+                                        {errors.area_ids && (
+                                            <p className="text-red-500 text-xs mt-1">{errors.area_ids}</p>
                                         )}
                                     </div>
                                 )}

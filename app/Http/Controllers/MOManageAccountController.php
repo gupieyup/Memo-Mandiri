@@ -17,10 +17,15 @@ class MOManageAccountController extends Controller
     {
         $user = Auth::user();
         
-        // Get all users except MO and CCH (only AMO Area and AMO Region)
+        // Get all users including MO and CCH
         $users = User::with(['area', 'areaResponsibilities.area'])
-            ->whereIn('role', ['AMO Area', 'AMO Region'])
-            ->orderBy('role')
+            ->orderByRaw("CASE 
+                WHEN role = 'MO' THEN 1 
+                WHEN role = 'CCH' THEN 2 
+                WHEN role = 'AMO Region' THEN 3 
+                WHEN role = 'AMO Area' THEN 4 
+                ELSE 5 
+            END")
             ->orderBy('nama')
             ->get()
             ->map(function ($user) {
@@ -46,8 +51,10 @@ class MOManageAccountController extends Controller
                 ];
             });
         
-        // Get all areas for dropdown
-        $areas = Area::select('id', 'nama')->get();
+        // Get all areas for dropdown, excluding "Region"
+        $areas = Area::select('id', 'nama')
+            ->where('nama', '!=', 'Region')
+            ->get();
         
         return Inertia::render("MO/Manage Account/page", [
             'auth' => [
@@ -113,15 +120,26 @@ class MOManageAccountController extends Controller
     {
         $user = User::findOrFail($id);
         
+        // Prevent role change for MO and CCH
+        $allowedRoles = ['AMO Area', 'AMO Region'];
+        if (in_array($user->role, ['MO', 'CCH'])) {
+            $allowedRoles = [$user->role]; // Only allow the same role
+        }
+        
         $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'nullable|string|min:6',
-            'role' => 'required|in:AMO Area,AMO Region',
+            'role' => 'required|in:' . implode(',', $allowedRoles),
             'area_id' => 'required_if:role,AMO Area|nullable|exists:areas,id',
             'area_ids' => 'required_if:role,AMO Region|array|min:1',
             'area_ids.*' => 'exists:areas,id',
         ]);
+        
+        // Ensure role cannot be changed for MO and CCH
+        if (in_array($user->role, ['MO', 'CCH']) && $request->role !== $user->role) {
+            return redirect()->back()->with('error', 'Cannot change role for MO or CCH users');
+        }
         
         DB::beginTransaction();
         try {
@@ -130,8 +148,16 @@ class MOManageAccountController extends Controller
                 'nama' => $request->nama,
                 'email' => $request->email,
                 'role' => $request->role,
-                'area_id' => $request->role === 'AMO Area' ? $request->area_id : null,
             ];
+            
+            // Only update area_id for AMO Area
+            if ($request->role === 'AMO Area') {
+                $updateData['area_id'] = $request->area_id;
+            } elseif (!in_array($request->role, ['MO', 'CCH'])) {
+                // Clear area_id for AMO Region and other roles (except MO and CCH which don't have area)
+                $updateData['area_id'] = null;
+            }
+            // For MO and CCH, don't update area_id (they don't have area)
             
             if ($request->filled('password')) {
                 $updateData['password'] = Hash::make($request->password);

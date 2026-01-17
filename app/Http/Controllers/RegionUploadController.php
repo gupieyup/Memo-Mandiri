@@ -16,8 +16,10 @@ class RegionUploadController extends Controller
     {
         $user = Auth::user();
         
-        // Get all areas and categories for dropdowns
-        $areas = Area::select('id', 'nama')->get();
+        // Get all areas and categories for dropdowns, excluding "Region"
+        $areas = Area::select('id', 'nama')
+            ->where('nama', '!=', 'Region')
+            ->get();
         $categories = Category::select('id', 'nama')->get();
         
         return Inertia::render("AMO Region/Upload/page", [

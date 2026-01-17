@@ -62,8 +62,10 @@ class RegionReviewController extends Controller
         // Get documents ordered by latest with pagination
         $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
-        // Get all areas and categories for filters
-        $areas = Area::select('id', 'nama')->get();
+        // Get all areas and categories for filters, excluding "Region"
+        $areas = Area::select('id', 'nama')
+            ->where('nama', '!=', 'Region')
+            ->get();
         $categories = Category::select('id', 'nama')->get();
         
         // Get all unique statuses for filter dropdown (AMO Region specific statuses)

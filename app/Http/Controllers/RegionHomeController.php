@@ -44,9 +44,11 @@ class RegionHomeController extends Controller
         // Get documents ordered by latest with pagination
         $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
-        // Get all categories and areas for dropdowns
+        // Get all categories and areas for dropdowns, excluding "Region"
         $categories = Category::select('id', 'nama')->get();
-        $areas = Area::select('id', 'nama')->get();
+        $areas = Area::select('id', 'nama')
+            ->where('nama', '!=', 'Region')
+            ->get();
         
         // Get all unique statuses for filter dropdown (excluding AMO Region specific statuses)
         $statuses = [
