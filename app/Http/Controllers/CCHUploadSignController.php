@@ -79,140 +79,172 @@ class CCHUploadSignController extends Controller
 
     public function store(Request $request)
     {
-        try {
-            // Validate request
-            $validated = $request->validate([
-                'document_id' => 'required|exists:documents,id',
-                'signature' => 'required|file|mimes:png|max:10240', // max 10MB
-                'x_position' => 'required|numeric|min:0',
-                'y_position' => 'required|numeric|min:0',
-                'width' => 'required|numeric|min:20|max:500',
-                'height' => 'required|numeric|min:20|max:500',
-            ]);
+        // First, validate basic requirements
+        $request->validate([
+            'document_id' => 'required|exists:documents,id',
+            'signature' => [
+                'required',
+                'file',
+                'max:10240', // 10MB max
+            ],
+            'x_position' => 'required|numeric|min:0',
+            'y_position' => 'required|numeric|min:0',
+            'width' => 'required|numeric|min:20|max:500',
+            'height' => 'required|numeric|min:20|max:500',
+            'preview_width' => 'nullable|numeric|min:100',
+            'preview_height' => 'nullable|numeric|min:100',
+        ]);
 
-            // Get document
-            $document = Document::findOrFail($validated['document_id']);
-            
-            if ($document->status !== 'Accept by CCH') {
-                return back()->withErrors(['document_id' => 'Document is not available for signature']);
-            }
-
-            // Get original file path
-            $originalPath = storage_path('app/public/' . $document->file_path);
-            
-            if (!file_exists($originalPath)) {
-                return back()->withErrors(['document_id' => 'Original document not found']);
-            }
-
-            // Get file extension
-            $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
-
-            if ($extension === 'pdf') {
-                // Process PDF
-                $signedPath = $this->addSignatureToPdf(
-                    $originalPath,
-                    $request->file('signature'),
-                    $validated['x_position'],
-                    $validated['y_position'],
-                    $validated['width'],
-                    $validated['height']
-                );
-            } else {
-                return back()->withErrors(['document_id' => 'Only PDF files are supported for signature']);
-            }
-
-            // Replace original file with signed version
-            if ($signedPath && file_exists($signedPath)) {
-                // Backup original (optional)
-                $backupPath = storage_path('app/backups/' . $document->file_path);
-                $backupDir = dirname($backupPath);
-                if (!is_dir($backupDir)) {
-                    mkdir($backupDir, 0755, true);
-                }
-                copy($originalPath, $backupPath);
-
-                // Replace with signed version
-                copy($signedPath, $originalPath);
-                
-                // Clean up temp file
-                unlink($signedPath);
-
-                // Update document status
-                $document->update([
-                    'status' => 'Signed by CCH',
-                    'signed_at' => now(),
-                    'signed_by' => Auth::id(),
-                ]);
-
-                return redirect()->route('cch.review')->with('success', 'Signature berhasil ditambahkan ke dokumen');
-            }
-
-            return back()->withErrors(['signature' => 'Failed to add signature to document']);
-
-        } catch (\Exception $e) {
-            Log::error('Error adding signature: ' . $e->getMessage());
-            return back()->withErrors(['signature' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        // Additional validation: check if file is actually a PNG image
+        $signatureFile = $request->file('signature');
+        if (!$signatureFile) {
+            return redirect()->back()->withErrors([
+                'signature' => 'The signature field is required.'
+            ])->withInput();
         }
-    }
 
-    private function addSignatureToPdf($pdfPath, $signatureFile, $x, $y, $width, $height)
-    {
+        $extension = strtolower($signatureFile->getClientOriginalExtension());
+        $mimeType = $signatureFile->getMimeType();
+        
+        // Check extension first (more reliable)
+        if ($extension !== 'png') {
+            return redirect()->back()->withErrors([
+                'signature' => 'The signature field must be a PNG image file (.png extension required).'
+            ])->withInput();
+        }
+        
+        // Also check MIME type if available (secondary validation)
+        $validMimeTypes = ['image/png', 'image/x-png', 'application/octet-stream'];
+        if (!in_array($mimeType, $validMimeTypes) && $mimeType !== null) {
+            // If MIME type is detected but not valid, still allow if extension is correct
+            // Some systems may not detect MIME type correctly for PNG files
+            // But we log it for debugging
+            Log::warning('PNG file with unexpected MIME type', [
+                'mime_type' => $mimeType,
+                'extension' => $extension,
+                'filename' => $signatureFile->getClientOriginalName()
+            ]);
+        }
+
+        $document = Document::findOrFail($request->document_id);
+        
+        // Check if document status is "Accept by CCH"
+        if ($document->status !== 'Accept by CCH') {
+            return redirect()->back()->with('error', 'Only documents with status "Accept by CCH" can be signed');
+        }
+
+        $user = Auth::user();
+        
         try {
-            // Create temp file for signed PDF
-            $tempPath = storage_path('app/temp/signed_' . uniqid() . '.pdf');
-            $tempDir = dirname($tempPath);
-            if (!is_dir($tempDir)) {
-                mkdir($tempDir, 0755, true);
+            // Get original PDF path
+            $originalPdfPath = storage_path('app/public/' . $document->file_path);
+            
+            if (!file_exists($originalPdfPath)) {
+                return redirect()->back()->with('error', 'Original document file not found');
             }
 
-            // Initialize FPDI
+            // Check if file is PDF
+            $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
+            if (strtolower($extension) !== 'pdf') {
+                return redirect()->back()->with('error', 'Only PDF documents can be signed');
+            }
+
+            // Store signature image temporarily
+            $signaturePath = $request->file('signature')->store('signatures', 'public');
+            $signatureFullPath = storage_path('app/public/' . $signaturePath);
+
+            // Create new PDF with signature using FPDI
             $pdf = new Fpdi();
             
-            // Get page count
-            $pageCount = $pdf->setSourceFile($pdfPath);
+            // Set source file
+            $pageCount = $pdf->setSourceFile($originalPdfPath);
             
-            // Process each page
+            // Get dimensions from last page for signature positioning
+            $lastPageTplId = $pdf->importPage($pageCount);
+            $lastPageSize = $pdf->getTemplateSize($lastPageTplId);
+            $pdfWidth = $lastPageSize['width'];
+            $pdfHeight = $lastPageSize['height'];
+            
+            // Get preview container dimensions (from frontend)
+            $previewWidth = $request->input('preview_width', 800);
+            $previewHeight = $request->input('preview_height', 600);
+            
+            // Convert pixel position to PDF points (72 DPI)
+            // X position: direct conversion
+            $xPosition = ($request->x_position / $previewWidth) * $pdfWidth;
+            
+            // Y position: PDF Y starts from bottom, so we need to invert
+            // Frontend Y is from top, PDF Y is from bottom
+            $yFromTop = $request->y_position;
+            $yFromBottom = $pdfHeight - (($yFromTop / $previewHeight) * $pdfHeight) - (($request->height / $previewHeight) * $pdfHeight);
+            $yPosition = max(0, $yFromBottom); // Ensure not negative
+            
+            // Convert pixel size to PDF points
+            $signatureWidth = ($request->width / $previewWidth) * $pdfWidth;
+            $signatureHeight = ($request->height / $previewHeight) * $pdfHeight;
+            
+            // Ensure signature fits within PDF bounds
+            if ($xPosition + $signatureWidth > $pdfWidth) {
+                $signatureWidth = max(10, $pdfWidth - $xPosition);
+            }
+            if ($yPosition < 0) {
+                $yPosition = 0;
+                $signatureHeight = min($signatureHeight, $pdfHeight);
+            }
+            if ($yPosition + $signatureHeight > $pdfHeight) {
+                $signatureHeight = max(10, $pdfHeight - $yPosition);
+            }
+            
+            // Import all pages and add signature to last page
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                 // Import page
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
+                $tplId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($tplId);
                 
-                // Add page with same orientation
-                $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
-                $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+                // Add page
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($tplId);
                 
-                // Use imported page as template
-                $pdf->useTemplate($templateId);
-                
-                // Add signature only on first page
-                if ($pageNo === 1) {
-                    // Convert signature position from pixels to PDF units (points)
-                    // Assuming 96 DPI for screen, PDF uses 72 DPI
-                    $pdfX = ($x * 72) / 96;
-                    $pdfY = ($y * 72) / 96;
-                    $pdfWidth = ($width * 72) / 96;
-                    $pdfHeight = ($height * 72) / 96;
-                    
-                    // Add signature image
-                    $pdf->Image(
-                        $signatureFile->getRealPath(),
-                        $pdfX,
-                        $pdfY,
-                        $pdfWidth,
-                        $pdfHeight,
-                        'PNG'
-                    );
+                // Add signature only on the last page
+                if ($pageNo == $pageCount) {
+                    // Add signature image to PDF using Fpdf Image method
+                    // FPDI extends FpdfTpl which extends FPDF, so Image() is available
+                    $pdf->Image($signatureFullPath, $xPosition, $yPosition, $signatureWidth, $signatureHeight);
                 }
             }
             
-            // Save signed PDF
-            $pdf->Output('F', $tempPath);
+            // Generate new filename
+            $newFileName = 'signed_' . time() . '_' . $document->file_name;
+            $newFilePath = 'documents/' . $newFileName;
+            $newFullPath = storage_path('app/public/' . $newFilePath);
             
-            return $tempPath;
-
+            // Ensure directory exists
+            $directory = dirname($newFullPath);
+            if (!is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+            
+            // Save new PDF
+            $pdf->Output('F', $newFullPath);
+            
+            // Delete old file if exists
+            if (Storage::disk('public')->exists($document->file_path)) {
+                Storage::disk('public')->delete($document->file_path);
+            }
+            
+            // Update document with new file
+            $document->file_name = $newFileName;
+            $document->file_path = $newFilePath;
+            $document->save();
+            
+            // Delete temporary signature file
+            Storage::disk('public')->delete($signaturePath);
+            
+            return redirect()->back()->with('success', 'Signature successfully added to document');
+            
         } catch (\Exception $e) {
-            Log::error('Error in addSignatureToPdf: ' . $e->getMessage());
-            throw $e;
+            Log::error('Error adding signature to PDF: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to add signature: ' . $e->getMessage());
         }
     }
 }

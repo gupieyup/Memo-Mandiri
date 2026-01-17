@@ -38,7 +38,7 @@ export default function UploadSign() {
         if (document) {
             setSelectedDocument(document);
             setData("document_id", documentId);
-            const previewUrl = `/cch/preview-document/${document.id}`;
+            const previewUrl = `/cch/preview-signature-document/${document.id}`;
             setPreviewUrl(previewUrl);
         } else {
             setSelectedDocument(null);
@@ -68,15 +68,29 @@ export default function UploadSign() {
 
     const handleFileSelect = (file) => {
         if (file) {
-            const validTypes = ["image/png"];
             const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            // Check file extension (more reliable than MIME type)
+            const fileName = file.name.toLowerCase();
+            const extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+            
+            // Check both extension and MIME type
+            const validTypes = ["image/png", "image/x-png"];
+            const isValidExtension = extension === 'png';
+            const isValidMimeType = !file.type || validTypes.includes(file.type);
 
-            if (!validTypes.includes(file.type)) {
+            if (!isValidExtension) {
                 toast.error("Format File Tidak Valid", {
-                    description: "Hanya file PNG yang diperbolehkan.",
+                    description: "Hanya file PNG yang diperbolehkan (ekstensi .png).",
                     duration: 5000,
                 });
                 return;
+            }
+
+            // Warn if MIME type doesn't match but extension is correct
+            if (!isValidMimeType && file.type) {
+                console.warn('File has .png extension but unexpected MIME type:', file.type);
+                // Still allow it since extension is correct
             }
 
             if (file.size > maxSize) {
@@ -132,8 +146,9 @@ export default function UploadSign() {
             const scrollLeft = documentPreviewRef.current?.scrollLeft || 0;
             const scrollTop = documentPreviewRef.current?.scrollTop || 0;
             
-            const x = e.clientX - rect.left - (signatureRect.left - rect.left);
-            const y = e.clientY - rect.top - (signatureRect.top - rect.top);
+            // Calculate offset from mouse position to signature top-left corner
+            const x = e.clientX - rect.left - signaturePosition.x + scrollLeft;
+            const y = e.clientY - rect.top - signaturePosition.y + scrollTop;
             setDragOffset({ x, y });
         }
     };
@@ -146,51 +161,84 @@ export default function UploadSign() {
         e.stopPropagation();
         setIsResizingSignature(true);
         
-        setResizeStart({
-            x: e.clientX,
-            y: e.clientY,
-            width: signatureSize.width,
-            height: signatureSize.height,
-        });
+        const rect = documentPreviewRef.current?.getBoundingClientRect();
+        if (rect) {
+            setResizeStart({
+                x: e.clientX,
+                y: e.clientY,
+                width: signatureSize.width,
+                height: signatureSize.height,
+                startX: signaturePosition.x,
+                startY: signaturePosition.y,
+            });
+        }
     };
 
 
     useEffect(() => {
+        let animationFrameId = null;
+
         const handleMouseMove = (e) => {
-            if (isResizingSignature) {
-                const deltaX = e.clientX - resizeStart.x;
-                const aspectRatio = resizeStart.width / resizeStart.height;
-                const newWidth = Math.max(20, Math.min(500, resizeStart.width + deltaX));
-                const newHeight = newWidth / aspectRatio;
-                
-                setSignatureSize({
-                    width: newWidth,
-                    height: newHeight,
-                });
-            } else if (isDraggingSignature && documentPreviewRef.current) {
-                const rect = documentPreviewRef.current.getBoundingClientRect();
-                const scrollLeft = documentPreviewRef.current.scrollLeft;
-                const scrollTop = documentPreviewRef.current.scrollTop;
-                
-                const x = e.clientX - rect.left - dragOffset.x + scrollLeft;
-                const y = e.clientY - rect.top - dragOffset.y + scrollTop;
-                
-                const newPosition = {
-                    x: Math.max(0, x),
-                    y: Math.max(0, y),
-                };
-                
-                setSignaturePosition(newPosition);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
             }
+
+            animationFrameId = requestAnimationFrame(() => {
+                if (isResizingSignature && documentPreviewRef.current) {
+                    const rect = documentPreviewRef.current.getBoundingClientRect();
+                    const scrollLeft = documentPreviewRef.current.scrollLeft || 0;
+                    const scrollTop = documentPreviewRef.current.scrollTop || 0;
+                    
+                    const deltaX = e.clientX - resizeStart.x;
+                    const aspectRatio = resizeStart.width / resizeStart.height;
+                    
+                    // Calculate new width with constraints
+                    const maxWidth = Math.min(500, rect.width - resizeStart.startX);
+                    const minWidth = 20;
+                    let newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStart.width + deltaX));
+                    let newHeight = newWidth / aspectRatio;
+                    
+                    // Ensure signature doesn't go outside preview bounds
+                    const maxHeight = rect.height - resizeStart.startY;
+                    if (newHeight > maxHeight) {
+                        newHeight = maxHeight;
+                        newWidth = newHeight * aspectRatio;
+                    }
+                    
+                    setSignatureSize({
+                        width: newWidth,
+                        height: newHeight,
+                    });
+                } else if (isDraggingSignature && documentPreviewRef.current) {
+                    const rect = documentPreviewRef.current.getBoundingClientRect();
+                    const scrollLeft = documentPreviewRef.current.scrollLeft || 0;
+                    const scrollTop = documentPreviewRef.current.scrollTop || 0;
+                    
+                    // Calculate new position
+                    let x = e.clientX - rect.left - dragOffset.x + scrollLeft;
+                    let y = e.clientY - rect.top - dragOffset.y + scrollTop;
+                    
+                    // Constrain to preview bounds
+                    const maxX = rect.width - signatureSize.width;
+                    const maxY = rect.height - signatureSize.height;
+                    
+                    x = Math.max(0, Math.min(maxX, x));
+                    y = Math.max(0, Math.min(maxY, y));
+                    
+                    setSignaturePosition({ x, y });
+                }
+            });
         };
 
         const handleMouseUp = () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
             if (isDraggingSignature) {
                 setIsDraggingSignature(false);
                 setData("x_position", signaturePosition.x);
                 setData("y_position", signaturePosition.y);
-                setData("width", signatureSize.width);
-                setData("height", signatureSize.height);
             }
             if (isResizingSignature) {
                 setIsResizingSignature(false);
@@ -200,13 +248,21 @@ export default function UploadSign() {
         };
 
         if (isDraggingSignature || isResizingSignature) {
-            document.addEventListener("mousemove", handleMouseMove);
+            document.addEventListener("mousemove", handleMouseMove, { passive: true });
             document.addEventListener("mouseup", handleMouseUp);
+            // Prevent text selection while dragging
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = isDraggingSignature ? 'grabbing' : 'se-resize';
         }
 
         return () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
         };
     }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, setData]);
 
@@ -229,6 +285,28 @@ export default function UploadSign() {
             return;
         }
 
+        // Get actual iframe dimensions for accurate position conversion
+        const iframe = iframeRef.current;
+        let previewWidth = 800;
+        let previewHeight = 600;
+        
+        if (iframe && iframe.contentWindow) {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDoc) {
+                    previewWidth = iframeDoc.body.scrollWidth || iframe.offsetWidth || 800;
+                    previewHeight = iframeDoc.body.scrollHeight || iframe.offsetHeight || 600;
+                }
+            } catch (e) {
+                // Cross-origin or other error, use defaults
+                previewWidth = documentPreviewRef.current?.offsetWidth || 800;
+                previewHeight = documentPreviewRef.current?.offsetHeight || 600;
+            }
+        } else {
+            previewWidth = documentPreviewRef.current?.offsetWidth || 800;
+            previewHeight = documentPreviewRef.current?.offsetHeight || 600;
+        }
+
         const formData = new FormData();
         formData.append("document_id", data.document_id);
         formData.append("signature", data.signature);
@@ -236,6 +314,8 @@ export default function UploadSign() {
         formData.append("y_position", signaturePosition.y);
         formData.append("width", signatureSize.width);
         formData.append("height", signatureSize.height);
+        formData.append("preview_width", previewWidth);
+        formData.append("preview_height", previewHeight);
 
         router.post("/cch/upload-signature", formData, {
             preserveScroll: true,
@@ -357,7 +437,7 @@ export default function UploadSign() {
                                         ></iframe>
                                         {uploadedSignature && (
                                             <div
-                                                className="absolute border-2 border-blue-500 rounded-lg shadow-lg bg-white p-1"
+                                                className="absolute border-2 border-blue-500 rounded-lg shadow-lg bg-white p-1 transition-transform"
                                                 style={{
                                                     left: `${signaturePosition.x}px`,
                                                     top: `${signaturePosition.y}px`,
@@ -365,26 +445,36 @@ export default function UploadSign() {
                                                     height: `${signatureSize.height}px`,
                                                     zIndex: 10,
                                                     pointerEvents: "auto",
+                                                    cursor: isDraggingSignature ? 'grabbing' : 'grab',
                                                 }}
                                             >
                                                 <img
                                                     ref={signatureRef}
                                                     src={URL.createObjectURL(uploadedSignature)}
                                                     alt="Signature"
-                                                    className="w-full h-full object-contain cursor-move"
+                                                    className="w-full h-full object-contain select-none"
                                                     onMouseDown={handleSignatureMouseDown}
                                                     draggable={false}
+                                                    style={{
+                                                        pointerEvents: isResizingSignature ? 'none' : 'auto',
+                                                    }}
                                                 />
                                                 <div
-                                                    className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+                                                    className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
                                                     onMouseDown={handleResizeMouseDown}
                                                     style={{
-                                                        cursor: 'se-resize',
+                                                        cursor: isResizingSignature ? 'se-resize' : 'se-resize',
                                                     }}
                                                     title="Resize signature"
                                                 >
                                                     <FiMaximize2 className="text-white text-xs transform rotate-45" />
                                                 </div>
+                                                {/* Helper text */}
+                                                {!isDraggingSignature && !isResizingSignature && (
+                                                    <div className="absolute -top-8 left-0 bg-blue-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                                        Drag to move • Resize from corner
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
