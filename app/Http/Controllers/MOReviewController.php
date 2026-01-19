@@ -27,16 +27,25 @@ class MOReviewController extends Controller
         // Build query
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
         
-        // Filter by status - MO sees documents that are "Accept by AMO Region" or need review
-        $query->whereIn('status', [
-            'Accept by AMO Region',
-            'Revision by MO',
-            'Accept by MO'
-        ]);
-        
-        // Filter documents only from users with role "AMO Area"
-        $query->whereHas('user', function ($q) {
-            $q->where('role', 'AMO Area');
+        // Filter by user role and status
+        $query->where(function ($q) {
+            // Documents from AMO Area with specific statuses
+            $q->whereHas('user', function ($userQuery) {
+                $userQuery->where('role', 'AMO Area');
+            })->whereIn('status', [
+                'Accept by AMO Region',
+                'Revision by MO',
+                'Accept by MO'
+            ]);
+            
+            // OR Documents from AMO Region with specific statuses (including On Process)
+            $q->orWhereHas('user', function ($userQuery) {
+                $userQuery->where('role', 'AMO Region');
+            })->whereIn('status', [
+                'On Process',
+                'Revision by MO',
+                'Accept by MO'
+            ]);
         });
         
         // Apply search filter if provided
@@ -68,6 +77,7 @@ class MOReviewController extends Controller
         
         // Get all unique statuses for filter dropdown (MO specific statuses)
         $statuses = [
+            'On Process',
             'Accept by AMO Region',
             'Revision by MO',
             'Accept by MO'

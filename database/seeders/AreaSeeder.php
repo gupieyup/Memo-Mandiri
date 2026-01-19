@@ -53,7 +53,7 @@ class AreaSeeder extends Seeder
 
         DB::table('areas')->insert([
             'id'=> 7,
-            'nama' => 'Pekalongan',
+            'nama' => 'Magelang',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

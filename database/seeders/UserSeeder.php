@@ -135,7 +135,7 @@ class UserSeeder extends Seeder
 
         DB::table('users')->insert([
             'id'=> 12,
-            'nama' => 'AMO Pekalongan',
+            'nama' => 'AMO Magelang',
             'email' => 'amoarea7@mandiri.com',
             'password' => Hash::make('password'),
             'role' => 'AMO Area',
