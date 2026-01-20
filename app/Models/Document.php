@@ -25,6 +25,11 @@ class Document extends Model
         'area_id',
         'user_id',
         'category_id',
+        'signature_page',
+        'signature_x',
+        'signature_y',
+        'signature_width',
+        'signature_height',
     ];
 
     /**
@@ -33,6 +38,11 @@ class Document extends Model
     protected $casts = [
         'periode_mulai'   => 'date',
         'periode_selesai' => 'date',
+        'signature_page' => 'integer',
+        'signature_x' => 'decimal:2',
+        'signature_y' => 'decimal:2',
+        'signature_width' => 'decimal:2',
+        'signature_height' => 'decimal:2',
     ];
 
     /**

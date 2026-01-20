@@ -539,32 +539,32 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                             key={doc.id}
                                             className="hover:bg-blue-50 transition-colors"
                                         >
-                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                            <td className="px-6 py-4 text-sm text-gray-700 align-middle">
                                                 {rowNumber}
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900 align-middle">
                                                 {doc.judul}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                            <td className="px-6 py-4 text-sm text-gray-700 align-middle">
                                                 {doc.category?.nama || "-"}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                            <td className="px-6 py-4 text-sm text-gray-700 align-middle">
                                                 {formatDate(doc.periode_mulai)} -{" "}
                                                 {formatDate(doc.periode_selesai)}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                            <td className="px-6 py-4 text-sm text-gray-700 align-middle">
                                                 {doc.area?.nama || "-"}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 align-middle">
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(
+                                                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusBadgeClass(
                                                         doc.status
                                                     )}`}
                                                 >
                                                     {doc.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 align-middle">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         onClick={() => openReviewModal(doc)}

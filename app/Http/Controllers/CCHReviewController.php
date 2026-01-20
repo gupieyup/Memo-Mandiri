@@ -22,46 +22,59 @@ class CCHReviewController extends Controller
         $categoryFilter = $request->input('category_id');
         $areaFilter = $request->input('area_id');
         $searchQuery = $request->input('search');
-        $perPage = $request->input('per_page', 10); // Default 10 items per page
+        $perPage = $request->input('per_page', 10);
         
         // Build query
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
         
-        // Filter by status - CCH only sees documents that are "Accept by MO" or higher
+        // Filter by status
         $query->whereIn('status', [
             'Accept by MO',
             'Revision by CCH',
             'Accept by CCH'
         ]);
         
-        // Apply search filter if provided
+        // Apply search filter
         if ($searchQuery) {
             $query->where('judul', 'like', '%' . $searchQuery . '%');
         }
         
-        // Apply status filter if provided
+        // Apply status filter
         if ($statusFilter) {
             $query->where('status', $statusFilter);
         }
         
-        // Filter by area if provided
+        // Filter by area
         if ($areaFilter && $areaFilter !== 'all') {
             $query->where('area_id', $areaFilter);
         }
         
-        // Filter by category if provided
+        // Filter by category
         if ($categoryFilter && $categoryFilter !== 'all') {
             $query->where('category_id', $categoryFilter);
         }
         
-        // Get documents ordered by latest with pagination
+        // Get documents with signature info
         $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        
+        // Transform documents to include signature info
+        $documents->getCollection()->transform(function ($document) {
+            $docArray = $document->toArray();
+            $docArray['has_signature'] = !is_null($document->signature_page);
+            $docArray['signature_info'] = [
+                'page' => $document->signature_page,
+                'x' => $document->signature_x,
+                'y' => $document->signature_y,
+                'width' => $document->signature_width,
+                'height' => $document->signature_height,
+            ];
+            return $docArray;
+        });
         
         // Get all areas and categories for filters
         $areas = Area::select('id', 'nama')->get();
         $categories = Category::select('id', 'nama')->get();
         
-        // Get all unique statuses for filter dropdown (CCH specific statuses)
         $statuses = [
             'Accept by MO',
             'Revision by CCH',
@@ -105,17 +118,14 @@ class CCHReviewController extends Controller
         $document = Document::findOrFail($id);
         $user = Auth::user();
         
-        // Update document status
         $document->status = $request->status;
         
-        // Update notes if provided
         if ($request->filled('notes')) {
             $document->notes = $request->notes;
         }
         
         $document->save();
         
-        // Create feedback record
         if ($request->filled('notes')) {
             Feedback::create([
                 'message' => $request->notes,
@@ -137,10 +147,8 @@ class CCHReviewController extends Controller
             return redirect()->back()->with('error', 'File not found');
         }
         
-        // Get the correct extension
         $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
         
-        // Set proper content type based on file extension
         $contentType = match($extension) {
             'pdf' => 'application/pdf',
             'doc' => 'application/msword',
@@ -157,7 +165,6 @@ class CCHReviewController extends Controller
     {
         $document = Document::findOrFail($id);
         
-        // CCH can preview documents that are "Accept by MO" or higher
         if (!in_array($document->status, ['Accept by MO', 'Revision by CCH', 'Accept by CCH'])) {
             abort(403, 'Document is not available for preview');
         }
@@ -168,10 +175,8 @@ class CCHReviewController extends Controller
             abort(404, 'File not found');
         }
         
-        // Get the correct extension
         $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
         
-        // Set proper content type based on file extension
         $contentType = match($extension) {
             'pdf' => 'application/pdf',
             'doc' => 'application/msword',

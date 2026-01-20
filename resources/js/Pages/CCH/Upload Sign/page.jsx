@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useForm, usePage, router } from "@inertiajs/react";
 import CCHLayout from "../../../Layouts/CCHLayout";
-import { FiUploadCloud, FiFile, FiX, FiCheck, FiMaximize2 } from "react-icons/fi";
+import { FiUploadCloud, FiFile, FiX, FiMaximize2 } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
 
 export default function UploadSign() {
@@ -16,6 +16,8 @@ export default function UploadSign() {
     const [isResizingSignature, setIsResizingSignature] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 200, height: 100 });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const fileInputRef = useRef(null);
     const documentPreviewRef = useRef(null);
     const signatureRef = useRef(null);
@@ -28,9 +30,65 @@ export default function UploadSign() {
         y_position: 50,
         width: 200,
         height: 100,
+        page_number: 1,
     });
 
-    // Handle document selection
+    // Detect PDF page changes when scrolling
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        const detectPageChange = () => {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (!iframeDoc) return;
+
+                // Try to get PDF.js viewer if available
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow.PDFViewerApplication) {
+                    const pdfViewer = iframeWindow.PDFViewerApplication;
+                    const pageNum = pdfViewer.page || 1;
+                    const totalPageCount = pdfViewer.pagesCount || 1;
+                    
+                    setCurrentPage(pageNum);
+                    setTotalPages(totalPageCount);
+                }
+            } catch (e) {
+                // Cross-origin or other error, can't access iframe content
+                console.warn('Cannot access PDF viewer:', e);
+            }
+        };
+
+        // Listen to iframe load and scroll events
+        const handleIframeLoad = () => {
+            detectPageChange();
+            
+            try {
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow) {
+                    // Add scroll listener to detect page changes
+                    iframeWindow.addEventListener('scroll', detectPageChange);
+                }
+            } catch (e) {
+                console.warn('Cannot add scroll listener:', e);
+            }
+        };
+
+        iframe.addEventListener('load', handleIframeLoad);
+
+        return () => {
+            iframe.removeEventListener('load', handleIframeLoad);
+            try {
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow) {
+                    iframeWindow.removeEventListener('scroll', detectPageChange);
+                }
+            } catch (e) {
+                // Ignore cleanup errors
+            }
+        };
+    }, [previewUrl]);
+
     const handleDocumentChange = (e) => {
         const documentId = e.target.value;
         const document = documents.find((doc) => doc.id === parseInt(documentId));
@@ -40,14 +98,17 @@ export default function UploadSign() {
             setData("document_id", documentId);
             const previewUrl = `/cch/preview-signature-document/${document.id}`;
             setPreviewUrl(previewUrl);
+            setCurrentPage(1);
+            setTotalPages(1);
         } else {
             setSelectedDocument(null);
             setPreviewUrl(null);
             setData("document_id", "");
+            setCurrentPage(1);
+            setTotalPages(1);
         }
     };
 
-    // Handle drag over for signature upload
     const handleDragOver = (e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -61,20 +122,15 @@ export default function UploadSign() {
     const handleDrop = (e) => {
         e.preventDefault();
         setIsDragging(false);
-
         const file = e.dataTransfer.files[0];
         handleFileSelect(file);
     };
 
     const handleFileSelect = (file) => {
         if (file) {
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            
-            // Check file extension (more reliable than MIME type)
+            const maxSize = 10 * 1024 * 1024;
             const fileName = file.name.toLowerCase();
             const extension = fileName.substring(fileName.lastIndexOf('.') + 1);
-            
-            // Check both extension and MIME type
             const validTypes = ["image/png", "image/x-png"];
             const isValidExtension = extension === 'png';
             const isValidMimeType = !file.type || validTypes.includes(file.type);
@@ -87,10 +143,8 @@ export default function UploadSign() {
                 return;
             }
 
-            // Warn if MIME type doesn't match but extension is correct
             if (!isValidMimeType && file.type) {
                 console.warn('File has .png extension but unexpected MIME type:', file.type);
-                // Still allow it since extension is correct
             }
 
             if (file.size > maxSize) {
@@ -105,9 +159,10 @@ export default function UploadSign() {
             setData("signature", file);
             setSignaturePosition({ x: 50, y: 50 });
             setSignatureSize({ width: 200, height: 100 });
+            setData("page_number", currentPage);
             
             toast.success("Signature Berhasil Dipilih", {
-                description: `${file.name} siap untuk diupload.`,
+                description: `${file.name} akan ditempatkan pada halaman ${currentPage}.`,
                 duration: 3000,
             });
         }
@@ -132,7 +187,6 @@ export default function UploadSign() {
         });
     };
 
-    // Handle signature positioning
     const handleSignatureMouseDown = (e) => {
         if (!uploadedSignature) return;
         
@@ -141,19 +195,15 @@ export default function UploadSign() {
         setIsDraggingSignature(true);
         
         const rect = documentPreviewRef.current?.getBoundingClientRect();
-        const signatureRect = signatureRef.current?.getBoundingClientRect();
-        if (rect && signatureRect) {
+        if (rect) {
             const scrollLeft = documentPreviewRef.current?.scrollLeft || 0;
             const scrollTop = documentPreviewRef.current?.scrollTop || 0;
-            
-            // Calculate offset from mouse position to signature top-left corner
             const x = e.clientX - rect.left - signaturePosition.x + scrollLeft;
             const y = e.clientY - rect.top - signaturePosition.y + scrollTop;
             setDragOffset({ x, y });
         }
     };
 
-    // Handle signature resize
     const handleResizeMouseDown = (e) => {
         if (!uploadedSignature) return;
         
@@ -161,19 +211,15 @@ export default function UploadSign() {
         e.stopPropagation();
         setIsResizingSignature(true);
         
-        const rect = documentPreviewRef.current?.getBoundingClientRect();
-        if (rect) {
-            setResizeStart({
-                x: e.clientX,
-                y: e.clientY,
-                width: signatureSize.width,
-                height: signatureSize.height,
-                startX: signaturePosition.x,
-                startY: signaturePosition.y,
-            });
-        }
+        setResizeStart({
+            x: e.clientX,
+            y: e.clientY,
+            width: signatureSize.width,
+            height: signatureSize.height,
+            startX: signaturePosition.x,
+            startY: signaturePosition.y,
+        });
     };
-
 
     useEffect(() => {
         let animationFrameId = null;
@@ -186,19 +232,14 @@ export default function UploadSign() {
             animationFrameId = requestAnimationFrame(() => {
                 if (isResizingSignature && documentPreviewRef.current) {
                     const rect = documentPreviewRef.current.getBoundingClientRect();
-                    const scrollLeft = documentPreviewRef.current.scrollLeft || 0;
-                    const scrollTop = documentPreviewRef.current.scrollTop || 0;
-                    
                     const deltaX = e.clientX - resizeStart.x;
                     const aspectRatio = resizeStart.width / resizeStart.height;
                     
-                    // Calculate new width with constraints
                     const maxWidth = Math.min(500, rect.width - resizeStart.startX);
                     const minWidth = 20;
                     let newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStart.width + deltaX));
                     let newHeight = newWidth / aspectRatio;
                     
-                    // Ensure signature doesn't go outside preview bounds
                     const maxHeight = rect.height - resizeStart.startY;
                     if (newHeight > maxHeight) {
                         newHeight = maxHeight;
@@ -214,11 +255,9 @@ export default function UploadSign() {
                     const scrollLeft = documentPreviewRef.current.scrollLeft || 0;
                     const scrollTop = documentPreviewRef.current.scrollTop || 0;
                     
-                    // Calculate new position
                     let x = e.clientX - rect.left - dragOffset.x + scrollLeft;
                     let y = e.clientY - rect.top - dragOffset.y + scrollTop;
                     
-                    // Constrain to preview bounds
                     const maxX = rect.width - signatureSize.width;
                     const maxY = rect.height - signatureSize.height;
                     
@@ -239,6 +278,7 @@ export default function UploadSign() {
                 setIsDraggingSignature(false);
                 setData("x_position", signaturePosition.x);
                 setData("y_position", signaturePosition.y);
+                setData("page_number", currentPage);
             }
             if (isResizingSignature) {
                 setIsResizingSignature(false);
@@ -250,7 +290,6 @@ export default function UploadSign() {
         if (isDraggingSignature || isResizingSignature) {
             document.addEventListener("mousemove", handleMouseMove, { passive: true });
             document.addEventListener("mouseup", handleMouseUp);
-            // Prevent text selection while dragging
             document.body.style.userSelect = 'none';
             document.body.style.cursor = isDraggingSignature ? 'grabbing' : 'se-resize';
         }
@@ -264,7 +303,7 @@ export default function UploadSign() {
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
         };
-    }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, setData]);
+    }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, currentPage, setData]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -285,7 +324,6 @@ export default function UploadSign() {
             return;
         }
 
-        // Get actual iframe dimensions for accurate position conversion
         const iframe = iframeRef.current;
         let previewWidth = 800;
         let previewHeight = 600;
@@ -298,7 +336,6 @@ export default function UploadSign() {
                     previewHeight = iframeDoc.body.scrollHeight || iframe.offsetHeight || 600;
                 }
             } catch (e) {
-                // Cross-origin or other error, use defaults
                 previewWidth = documentPreviewRef.current?.offsetWidth || 800;
                 previewHeight = documentPreviewRef.current?.offsetHeight || 600;
             }
@@ -314,6 +351,7 @@ export default function UploadSign() {
         formData.append("y_position", signaturePosition.y);
         formData.append("width", signatureSize.width);
         formData.append("height", signatureSize.height);
+        formData.append("page_number", currentPage);
         formData.append("preview_width", previewWidth);
         formData.append("preview_height", previewHeight);
 
@@ -327,11 +365,12 @@ export default function UploadSign() {
                 setUploadedSignature(null);
                 setSignaturePosition({ x: 50, y: 50 });
                 setSignatureSize({ width: 200, height: 100 });
+                setCurrentPage(1);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = "";
                 }
                 toast.success("Signature Berhasil Disimpan", {
-                    description: "Signature telah berhasil ditambahkan ke dokumen.",
+                    description: `Signature telah ditambahkan pada halaman ${currentPage}.`,
                     duration: 4000,
                 });
             },
@@ -350,21 +389,12 @@ export default function UploadSign() {
     };
 
     return (
-        <>
-            <CCHLayout>
+        <CCHLayout>
             <Toaster
                 position="top-right"
                 expand={true}
                 richColors
                 closeButton
-                toastOptions={{
-                    style: {
-                        padding: "16px",
-                        borderRadius: "12px",
-                        fontSize: "14px",
-                    },
-                    className: "sonner-toast",
-                }}
             />
 
             <div className="min-h-full">
@@ -383,7 +413,6 @@ export default function UploadSign() {
 
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column - Document Selection and Preview */}
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -408,6 +437,27 @@ export default function UploadSign() {
                                 )}
                             </div>
 
+                            {previewUrl && uploadedSignature && (
+                                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                            <span className="text-sm font-semibold text-gray-700">
+                                                Signature akan ditempatkan pada halaman {currentPage}
+                                            </span>
+                                        </div>
+                                        {totalPages > 1 && (
+                                            <span className="text-xs text-gray-500">
+                                                Total: {totalPages} halaman
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-2">
+                                        💡 Scroll dokumen untuk mengubah halaman penempatan signature
+                                    </p>
+                                </div>
+                            )}
+
                             <div
                                 ref={documentPreviewRef}
                                 className="border-2 border-gray-200 rounded-xl bg-gray-50"
@@ -418,9 +468,7 @@ export default function UploadSign() {
                                 }}
                             >
                                 {previewUrl ? (
-                                    <div 
-                                        className="relative w-full h-full"
-                                    >
+                                    <div className="relative w-full h-full">
                                         <iframe
                                             ref={iframeRef}
                                             title="Document Preview"
@@ -462,14 +510,10 @@ export default function UploadSign() {
                                                 <div
                                                     className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
                                                     onMouseDown={handleResizeMouseDown}
-                                                    style={{
-                                                        cursor: isResizingSignature ? 'se-resize' : 'se-resize',
-                                                    }}
                                                     title="Resize signature"
                                                 >
                                                     <FiMaximize2 className="text-white text-xs transform rotate-45" />
                                                 </div>
-                                                {/* Helper text */}
                                                 {!isDraggingSignature && !isResizingSignature && (
                                                     <div className="absolute -top-8 left-0 bg-blue-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                                                         Drag to move • Resize from corner
@@ -492,7 +536,6 @@ export default function UploadSign() {
                             </div>
                         </div>
 
-                        {/* Right Column - Upload Signature */}
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -527,9 +570,7 @@ export default function UploadSign() {
                                         />
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                fileInputRef.current?.click()
-                                            }
+                                            onClick={() => fileInputRef.current?.click()}
                                             className="px-8 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:border-blue-700 hover:text-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
                                         >
                                             Select File
@@ -547,12 +588,7 @@ export default function UploadSign() {
                                                         {uploadedSignature.name}
                                                     </p>
                                                     <p className="text-sm text-gray-600">
-                                                        {(
-                                                            uploadedSignature.size /
-                                                            1024 /
-                                                            1024
-                                                        ).toFixed(2)}{" "}
-                                                        MB
+                                                        {(uploadedSignature.size / 1024 / 1024).toFixed(2)} MB
                                                     </p>
                                                 </div>
                                             </div>
@@ -575,7 +611,6 @@ export default function UploadSign() {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex justify-end gap-4 pt-6 mt-6 border-t-2 border-gray-100">
                         <button
                             type="button"
@@ -600,6 +635,5 @@ export default function UploadSign() {
                 </div>
             </div>
         </CCHLayout>
-        </>
     );
 }

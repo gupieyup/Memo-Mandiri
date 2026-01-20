@@ -79,7 +79,7 @@ class CCHUploadSignController extends Controller
 
     public function store(Request $request)
     {
-        // First, validate basic requirements
+        // Validate request
         $request->validate([
             'document_id' => 'required|exists:documents,id',
             'signature' => [
@@ -91,11 +91,12 @@ class CCHUploadSignController extends Controller
             'y_position' => 'required|numeric|min:0',
             'width' => 'required|numeric|min:20|max:500',
             'height' => 'required|numeric|min:20|max:500',
+            'page_number' => 'required|integer|min:1',
             'preview_width' => 'nullable|numeric|min:100',
             'preview_height' => 'nullable|numeric|min:100',
         ]);
 
-        // Additional validation: check if file is actually a PNG image
+        // Validate PNG file
         $signatureFile = $request->file('signature');
         if (!$signatureFile) {
             return redirect()->back()->withErrors([
@@ -106,19 +107,14 @@ class CCHUploadSignController extends Controller
         $extension = strtolower($signatureFile->getClientOriginalExtension());
         $mimeType = $signatureFile->getMimeType();
         
-        // Check extension first (more reliable)
         if ($extension !== 'png') {
             return redirect()->back()->withErrors([
                 'signature' => 'The signature field must be a PNG image file (.png extension required).'
             ])->withInput();
         }
         
-        // Also check MIME type if available (secondary validation)
         $validMimeTypes = ['image/png', 'image/x-png', 'application/octet-stream'];
         if (!in_array($mimeType, $validMimeTypes) && $mimeType !== null) {
-            // If MIME type is detected but not valid, still allow if extension is correct
-            // Some systems may not detect MIME type correctly for PNG files
-            // But we log it for debugging
             Log::warning('PNG file with unexpected MIME type', [
                 'mime_type' => $mimeType,
                 'extension' => $extension,
@@ -128,7 +124,6 @@ class CCHUploadSignController extends Controller
 
         $document = Document::findOrFail($request->document_id);
         
-        // Check if document status is "Accept by CCH"
         if ($document->status !== 'Accept by CCH') {
             return redirect()->back()->with('error', 'Only documents with status "Accept by CCH" can be signed');
         }
@@ -136,14 +131,12 @@ class CCHUploadSignController extends Controller
         $user = Auth::user();
         
         try {
-            // Get original PDF path
             $originalPdfPath = storage_path('app/public/' . $document->file_path);
             
             if (!file_exists($originalPdfPath)) {
                 return redirect()->back()->with('error', 'Original document file not found');
             }
 
-            // Check if file is PDF
             $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
             if (strtolower($extension) !== 'pdf') {
                 return redirect()->back()->with('error', 'Only PDF documents can be signed');
@@ -159,57 +152,82 @@ class CCHUploadSignController extends Controller
             // Set source file
             $pageCount = $pdf->setSourceFile($originalPdfPath);
             
-            // Get dimensions from last page for signature positioning
-            $lastPageTplId = $pdf->importPage($pageCount);
-            $lastPageSize = $pdf->getTemplateSize($lastPageTplId);
-            $pdfWidth = $lastPageSize['width'];
-            $pdfHeight = $lastPageSize['height'];
+            // Get the target page number from request
+            $targetPage = min($request->page_number, $pageCount);
             
-            // Get preview container dimensions (from frontend)
+            // Get dimensions from target page for signature positioning
+            $targetPageTplId = $pdf->importPage($targetPage);
+            $targetPageSize = $pdf->getTemplateSize($targetPageTplId);
+            $pdfWidth = $targetPageSize['width'];
+            $pdfHeight = $targetPageSize['height'];
+            
+            // Get preview container dimensions
             $previewWidth = $request->input('preview_width', 800);
             $previewHeight = $request->input('preview_height', 600);
             
-            // Convert pixel position to PDF points (72 DPI)
-            // X position: direct conversion
-            $xPosition = ($request->x_position / $previewWidth) * $pdfWidth;
+            // Calculate scale factors
+            // The iframe shows PDF scaled to fit the container
+            $scaleX = $pdfWidth / $previewWidth;
+            $scaleY = $pdfHeight / $previewHeight;
             
-            // Y position: PDF Y starts from bottom, so we need to invert
-            // Frontend Y is from top, PDF Y is from bottom
-            $yFromTop = $request->y_position;
-            $yFromBottom = $pdfHeight - (($yFromTop / $previewHeight) * $pdfHeight) - (($request->height / $previewHeight) * $pdfHeight);
-            $yPosition = max(0, $yFromBottom); // Ensure not negative
+            // Convert pixel position to PDF points
+            // Use the actual scale from preview to PDF
+            $xPosition = $request->x_position * $scaleX;
+            $yPosition = $request->y_position * $scaleY;
             
             // Convert pixel size to PDF points
-            $signatureWidth = ($request->width / $previewWidth) * $pdfWidth;
-            $signatureHeight = ($request->height / $previewHeight) * $pdfHeight;
+            $signatureWidth = $request->width * $scaleX;
+            $signatureHeight = $request->height * $scaleY;
             
             // Ensure signature fits within PDF bounds
             if ($xPosition + $signatureWidth > $pdfWidth) {
                 $signatureWidth = max(10, $pdfWidth - $xPosition);
             }
-            if ($yPosition < 0) {
-                $yPosition = 0;
-                $signatureHeight = min($signatureHeight, $pdfHeight);
-            }
             if ($yPosition + $signatureHeight > $pdfHeight) {
                 $signatureHeight = max(10, $pdfHeight - $yPosition);
             }
+            if ($xPosition < 0) {
+                $xPosition = 0;
+            }
+            if ($yPosition < 0) {
+                $yPosition = 0;
+            }
             
-            // Import all pages and add signature to last page
+            Log::info('Signature positioning', [
+                'page' => $targetPage,
+                'preview_width' => $previewWidth,
+                'preview_height' => $previewHeight,
+                'pdf_width' => $pdfWidth,
+                'pdf_height' => $pdfHeight,
+                'scale_x' => $scaleX,
+                'scale_y' => $scaleY,
+                'x_position_px' => $request->x_position,
+                'y_position_px' => $request->y_position,
+                'x_position_pdf' => $xPosition,
+                'y_position_pdf' => $yPosition,
+                'width' => $signatureWidth,
+                'height' => $signatureHeight,
+            ]);
+            
+            // Import all pages and add signature to target page only
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                // Import page
                 $tplId = $pdf->importPage($pageNo);
                 $size = $pdf->getTemplateSize($tplId);
                 
-                // Add page
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($tplId);
                 
-                // Add signature only on the last page
-                if ($pageNo == $pageCount) {
-                    // Add signature image to PDF using Fpdf Image method
-                    // FPDI extends FpdfTpl which extends FPDF, so Image() is available
-                    $pdf->Image($signatureFullPath, $xPosition, $yPosition, $signatureWidth, $signatureHeight);
+                // Add signature only on the target page
+                if ($pageNo == $targetPage) {
+                    // PDF coordinates: (0,0) is top-left in FPDI
+                    $pdf->Image(
+                        $signatureFullPath, 
+                        $xPosition, 
+                        $yPosition, 
+                        $signatureWidth, 
+                        $signatureHeight,
+                        'PNG'
+                    );
                 }
             }
             
@@ -232,9 +250,14 @@ class CCHUploadSignController extends Controller
                 Storage::disk('public')->delete($document->file_path);
             }
             
-            // Update document with new file
+            // Update document with new file and signature info
             $document->file_name = $newFileName;
             $document->file_path = $newFilePath;
+            $document->signature_page = $targetPage;
+            $document->signature_x = $request->x_position;
+            $document->signature_y = $request->y_position;
+            $document->signature_width = $request->width;
+            $document->signature_height = $request->height;
             $document->save();
             
             // Delete temporary signature file
@@ -244,6 +267,7 @@ class CCHUploadSignController extends Controller
             
         } catch (\Exception $e) {
             Log::error('Error adding signature to PDF: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return redirect()->back()->with('error', 'Failed to add signature: ' . $e->getMessage());
         }
     }
