@@ -5,7 +5,7 @@ import { FiDownload, FiEdit, FiSearch, FiFile } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
 
 export default function Review({ auth, documents, areas, categories, statuses, filters }) {
-    const { flash } = usePage().props;
+    const { flash, errors } = usePage().props;
     const [selectedArea, setSelectedArea] = useState(filters?.area_id || "all");
     const [selectedCategory, setSelectedCategory] = useState(filters?.category_id || "all");
     const [statusFilter, setStatusFilter] = useState(filters?.status || "");
@@ -15,6 +15,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Show toast notifications for flash messages
     useEffect(() => {
@@ -29,6 +30,17 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             });
         }
     }, [flash]);
+
+    // Show validation errors
+    useEffect(() => {
+        if (errors && Object.keys(errors).length > 0) {
+            Object.values(errors).forEach(error => {
+                toast.error(error, {
+                    duration: 3000,
+                });
+            });
+        }
+    }, [errors]);
 
     // Update filters when props change
     useEffect(() => {
@@ -208,8 +220,14 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const openReviewModal = (document) => {
         setSelectedDocument(document);
         setReviewNotes(document.notes || "");
-        setSelectedStatus(document.status);
+        // Set default status based on current document status
+        if (document.status === "Accept by AMO Region" || document.status === "On Process") {
+            setSelectedStatus("Revision by MO");
+        } else {
+            setSelectedStatus(document.status);
+        }
         setShowReviewModal(true);
+        setIsSubmitting(false);
     };
 
     const closeReviewModal = () => {
@@ -217,10 +235,16 @@ export default function Review({ auth, documents, areas, categories, statuses, f
         setSelectedDocument(null);
         setReviewNotes("");
         setSelectedStatus("");
+        setIsSubmitting(false);
     };
 
     const handleSaveReview = () => {
-        if (!selectedDocument) return;
+        if (!selectedDocument) {
+            toast.error("Tidak ada dokumen yang dipilih", {
+                duration: 3000,
+            });
+            return;
+        }
 
         if (!selectedStatus) {
             toast.error("Pilih status terlebih dahulu", {
@@ -229,32 +253,43 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             return;
         }
 
+        // Prevent double submission
+        if (isSubmitting) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        const formData = {
+            status: selectedStatus,
+            notes: reviewNotes.trim(),
+        };
+
+        console.log('Sending data:', formData);
+
         router.post(
             `/mo/update-review-status/${selectedDocument.id}`,
-            {
-                status: selectedStatus,
-                notes: reviewNotes,
-            },
+            formData,
             {
                 onSuccess: () => {
-                    toast.success("Review berhasil disimpan", {
-                        description: "Status dokumen telah diperbarui.",
-                        duration: 3000,
-                    });
+                    setIsSubmitting(false);
                     closeReviewModal();
                 },
                 onError: (errors) => {
-                    toast.error("Gagal menyimpan review", {
-                        description: errors.message || "Terjadi kesalahan saat menyimpan review.",
-                        duration: 3000,
-                    });
+                    setIsSubmitting(false);
+                    console.error('Save review error:', errors);
                 },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                }
             }
         );
     };
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
+            case "On Process":
+                return "bg-blue-100 text-blue-800 border border-blue-300";
             case "Accept by AMO Region":
                 return "bg-yellow-100 text-yellow-800 border border-yellow-300";
             case "Revision by MO":
@@ -704,15 +739,27 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                         <div className="px-8 pb-8 flex gap-4 justify-end">
                             <button
                                 onClick={closeReviewModal}
-                                className="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all"
+                                disabled={isSubmitting}
+                                className="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSaveReview}
-                                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                                disabled={isSubmitting}
+                                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                Save
+                                {isSubmitting ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Menyimpan...
+                                    </>
+                                ) : (
+                                    'Save'
+                                )}
                             </button>
                         </div>
                     </div>

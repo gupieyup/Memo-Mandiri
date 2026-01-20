@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class MOReviewController extends Controller
 {
@@ -22,7 +23,7 @@ class MOReviewController extends Controller
         $categoryFilter = $request->input('category_id');
         $areaFilter = $request->input('area_id');
         $searchQuery = $request->input('search');
-        $perPage = $request->input('per_page', 10); // Default 10 items per page
+        $perPage = $request->input('per_page', 10);
         
         // Build query
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
@@ -112,50 +113,88 @@ class MOReviewController extends Controller
     
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:Revision by MO,Accept by MO',
-            'notes' => 'nullable|string',
-        ]);
-        
-        $document = Document::findOrFail($id);
-        
-        // Check if document is from user with role "AMO Area"
-        if ($document->user->role !== 'AMO Area') {
-            abort(403, 'Unauthorized access');
-        }
-        
-        $user = Auth::user();
-        
-        // Update document status
-        $document->status = $request->status;
-        
-        // Update notes if provided
-        if ($request->filled('notes')) {
-            $document->notes = $request->notes;
-        }
-        
-        $document->save();
-        
-        // Create feedback record
-        if ($request->filled('notes')) {
-            Feedback::create([
-                'message' => $request->notes,
-                'user_id' => $user->id,
-                'document_id' => $document->id,
+        try {
+            // Log incoming request data
+            Log::info('Update status request', [
+                'document_id' => $id,
+                'status' => $request->input('status'),
+                'notes' => $request->input('notes'),
+                'all_data' => $request->all()
             ]);
+
+            $validated = $request->validate([
+                'status' => 'required|in:Revision by MO,Accept by MO',
+                'notes' => 'nullable|string',
+            ]);
+            
+            $document = Document::findOrFail($id);
+            
+            Log::info('Document found', [
+                'current_status' => $document->status,
+                'new_status' => $validated['status']
+            ]);
+            
+            // Check if document can be reviewed by MO
+            if (!in_array($document->status, [
+                'On Process',
+                'Accept by AMO Region', 
+                'Revision by MO', 
+                'Accept by MO'
+            ])) {
+                Log::warning('Document status not allowed for review', [
+                    'current_status' => $document->status
+                ]);
+                return redirect()->back()->with('error', 'Document cannot be reviewed at this status');
+            }
+            
+            $user = Auth::user();
+            
+            // Update document status
+            $document->status = $validated['status'];
+            
+            // Update notes if provided (optional - notes field in documents table)
+            if ($request->filled('notes')) {
+                $document->notes = $validated['notes'];
+            }
+            
+            $document->save();
+            
+            Log::info('Document updated successfully');
+            
+            // Create feedback record if notes provided
+            if ($request->filled('notes') && !empty(trim($validated['notes']))) {
+                $feedback = Feedback::create([
+                    'message' => $validated['notes'],
+                    'user_id' => $user->id,
+                    'document_id' => $document->id,
+                ]);
+                Log::info('Feedback created', ['feedback_id' => $feedback->id]);
+            }
+            
+            return redirect()->back()->with('success', 'Review berhasil disimpan');
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            $errors = [];
+            foreach ($e->errors() as $field => $messages) {
+                $errors = array_merge($errors, $messages);
+            }
+            return redirect()->back()->with('error', 'Validasi gagal: ' . implode(', ', $errors));
+        } catch (\Exception $e) {
+            Log::error('Error updating document status', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Gagal menyimpan review: ' . $e->getMessage());
         }
-        
-        return redirect()->back()->with('success', 'Document status updated successfully');
     }
     
     public function download($id)
     {
         $document = Document::findOrFail($id);
-        
-        // Check if document is from user with role "AMO Area"
-        if ($document->user->role !== 'AMO Area') {
-            abort(403, 'Unauthorized access');
-        }
         
         $filePath = storage_path('app/public/' . $document->file_path);
         
@@ -183,13 +222,13 @@ class MOReviewController extends Controller
     {
         $document = Document::findOrFail($id);
         
-        // MO can preview documents that are "Accept by AMO Region" or need review
-        if (!in_array($document->status, ['Accept by AMO Region', 'Revision by MO', 'Accept by MO'])) {
-            abort(403, 'Document is not available for preview');
-        }
-        
-        // Check if document is from user with role "AMO Area"
-        if ($document->user->role !== 'AMO Area') {
+        // MO can preview documents that are available for review
+        if (!in_array($document->status, [
+            'On Process',
+            'Accept by AMO Region', 
+            'Revision by MO', 
+            'Accept by MO'
+        ])) {
             abort(403, 'Document is not available for preview');
         }
         
