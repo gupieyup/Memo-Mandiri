@@ -98,6 +98,8 @@ Route::middleware('auth')->group(function () {
         
         // Upload Signature
         Route::get('/upload-signature', [MOUploadSignController::class, 'index'])->name('upload-signature');
+        Route::get('/preview-signature-document/{id}', [MOUploadSignController::class, 'preview'])->name('preview-signature-document');
+        Route::post('/upload-signature', [MOUploadSignController::class, 'store'])->name('upload-signature.store');
         
         // Manage Account
         Route::get('/manage-account', [MOManageAccountController::class, 'index'])->name('manage-account');
