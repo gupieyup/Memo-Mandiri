@@ -133,7 +133,7 @@ class AreaHomeController extends Controller
             $fileName = time() . '_' . $file->getClientOriginalName();
             $filePath = $file->storeAs('documents', $fileName, 'public');
 
-            $updateData['file_name'] = $fileName;
+            $updateData['file_name'] = $file->getClientOriginalName(); // Use original name for display/download
             $updateData['file_path'] = $filePath;
             $updateData['file_size'] = $file->getSize();
             $updateData['file_type'] = $file->getClientMimeType();

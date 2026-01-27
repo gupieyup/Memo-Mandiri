@@ -88,7 +88,7 @@ class AreaUploadController extends Controller
                 'periode_mulai' => $validated['periode_mulai'],
                 'periode_selesai' => $validated['periode_selesai'],
                 'status' => $finalStatus,
-                'file_name' => $fileName,
+                'file_name' => $file->getClientOriginalName(), // Use original name for display/download
                 'file_path' => $filePath,
                 'file_size' => $file->getSize(),
                 'file_type' => $file->getClientMimeType(),

@@ -251,7 +251,7 @@ class MOUploadSignController extends Controller
             }
             
             // Update document with new file and signature info
-            $document->file_name = $newFileName;
+            // $document->file_name = $newFileName; // Keep original filename
             $document->file_path = $newFilePath;
             $document->signature_page = $targetPage;
             $document->signature_x = $request->x_position;
