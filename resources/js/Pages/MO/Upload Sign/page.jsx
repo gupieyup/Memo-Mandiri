@@ -1,11 +1,20 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useForm, usePage, router } from "@inertiajs/react";
 import MOLayout from "../../../Layouts/MOLayout";
-import { FiUploadCloud, FiFile, FiX, FiMaximize2 } from "react-icons/fi";
+import { FiUploadCloud, FiFile, FiX, FiMaximize2, FiChevronLeft, FiChevronRight, FiCheck } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Configure PDF worker
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
 
 export default function UploadSign() {
-    const { auth, documents, flash } = usePage().props;
+    const { auth, documents } = usePage().props;
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -16,12 +25,17 @@ export default function UploadSign() {
     const [isResizingSignature, setIsResizingSignature] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 200, height: 100 });
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+
+    // PDF State
+    const [numPages, setNumPages] = useState(null);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [pdfScale, setPdfScale] = useState(1.0);
+    const [containerWidth, setContainerWidth] = useState(800);
+
     const fileInputRef = useRef(null);
     const documentPreviewRef = useRef(null);
     const signatureRef = useRef(null);
-    const iframeRef = useRef(null);
+    const pdfWrapperRef = useRef(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         document_id: "",
@@ -33,61 +47,34 @@ export default function UploadSign() {
         page_number: 1,
     });
 
-    // Detect PDF page changes when scrolling
+    // Update container width for responsive PDF scaling
     useEffect(() => {
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-
-        const detectPageChange = () => {
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (!iframeDoc) return;
-
-                // Try to get PDF.js viewer if available
-                const iframeWindow = iframe.contentWindow;
-                if (iframeWindow.PDFViewerApplication) {
-                    const pdfViewer = iframeWindow.PDFViewerApplication;
-                    const pageNum = pdfViewer.page || 1;
-                    const totalPageCount = pdfViewer.pagesCount || 1;
-
-                    setCurrentPage(pageNum);
-                    setTotalPages(totalPageCount);
-                }
-            } catch (e) {
-                // Cross-origin or other error, can't access iframe content
-                console.warn('Cannot access PDF viewer:', e);
+        const updateWidth = () => {
+            if (documentPreviewRef.current) {
+                setContainerWidth(documentPreviewRef.current.clientWidth);
             }
         };
 
-        // Listen to iframe load and scroll events
-        const handleIframeLoad = () => {
-            detectPageChange();
+        window.addEventListener('resize', updateWidth);
+        updateWidth();
 
-            try {
-                const iframeWindow = iframe.contentWindow;
-                if (iframeWindow) {
-                    // Add scroll listener to detect page changes
-                    iframeWindow.addEventListener('scroll', detectPageChange);
-                }
-            } catch (e) {
-                console.warn('Cannot add scroll listener:', e);
+        return () => window.removeEventListener('resize', updateWidth);
+    }, []);
+
+    const onDocumentLoadSuccess = ({ numPages }) => {
+        setNumPages(numPages);
+        setPageNumber(1);
+    };
+
+    const changePage = (offset) => {
+        setPageNumber(prevPageNumber => {
+            const newPage = prevPageNumber + offset;
+            if (newPage >= 1 && newPage <= numPages) {
+                return newPage;
             }
-        };
-
-        iframe.addEventListener('load', handleIframeLoad);
-
-        return () => {
-            iframe.removeEventListener('load', handleIframeLoad);
-            try {
-                const iframeWindow = iframe.contentWindow;
-                if (iframeWindow) {
-                    iframeWindow.removeEventListener('scroll', detectPageChange);
-                }
-            } catch (e) {
-                // Ignore cleanup errors
-            }
-        };
-    }, [previewUrl]);
+            return prevPageNumber;
+        });
+    };
 
     const handleDocumentChange = (e) => {
         const documentId = e.target.value;
@@ -98,14 +85,12 @@ export default function UploadSign() {
             setData("document_id", documentId);
             const previewUrl = `/mo/preview-signature-document/${document.id}`;
             setPreviewUrl(previewUrl);
-            setCurrentPage(1);
-            setTotalPages(1);
+            setPageNumber(1);
         } else {
             setSelectedDocument(null);
             setPreviewUrl(null);
             setData("document_id", "");
-            setCurrentPage(1);
-            setTotalPages(1);
+            setPageNumber(1);
         }
     };
 
@@ -159,10 +144,10 @@ export default function UploadSign() {
             setData("signature", file);
             setSignaturePosition({ x: 50, y: 50 });
             setSignatureSize({ width: 200, height: 100 });
-            setData("page_number", currentPage);
+            setData("page_number", pageNumber); // Set to current viewing page
 
             toast.success("Signature Berhasil Dipilih", {
-                description: `${file.name} akan ditempatkan pada halaman ${currentPage}.`,
+                description: `${file.name} akan ditempatkan pada halaman ${pageNumber}.`,
                 duration: 3000,
             });
         }
@@ -187,6 +172,13 @@ export default function UploadSign() {
         });
     };
 
+    // Update data page_number when page changes
+    useEffect(() => {
+        if (uploadedSignature) {
+            setData("page_number", pageNumber);
+        }
+    }, [pageNumber, uploadedSignature, setData]);
+
     const handleSignatureMouseDown = (e) => {
         if (!uploadedSignature) return;
 
@@ -194,14 +186,13 @@ export default function UploadSign() {
         e.stopPropagation();
         setIsDraggingSignature(true);
 
-        const rect = documentPreviewRef.current?.getBoundingClientRect();
-        if (rect) {
-            const scrollLeft = documentPreviewRef.current?.scrollLeft || 0;
-            const scrollTop = documentPreviewRef.current?.scrollTop || 0;
-            const x = e.clientX - rect.left - signaturePosition.x + scrollLeft;
-            const y = e.clientY - rect.top - signaturePosition.y + scrollTop;
-            setDragOffset({ x, y });
-        }
+        // Get coordinates relative to the PDF Page container
+        const container = e.currentTarget.parentElement.parentElement;
+        const rect = container.getBoundingClientRect();
+
+        const x = e.clientX - rect.left - signaturePosition.x;
+        const y = e.clientY - rect.top - signaturePosition.y;
+        setDragOffset({ x, y });
     };
 
     const handleResizeMouseDown = (e) => {
@@ -230,8 +221,8 @@ export default function UploadSign() {
             }
 
             animationFrameId = requestAnimationFrame(() => {
-                if (isResizingSignature && documentPreviewRef.current) {
-                    const rect = documentPreviewRef.current.getBoundingClientRect();
+                if (isResizingSignature && pdfWrapperRef.current) {
+                    const rect = pdfWrapperRef.current.getBoundingClientRect();
                     const deltaX = e.clientX - resizeStart.x;
                     const aspectRatio = resizeStart.width / resizeStart.height;
 
@@ -250,13 +241,11 @@ export default function UploadSign() {
                         width: newWidth,
                         height: newHeight,
                     });
-                } else if (isDraggingSignature && documentPreviewRef.current) {
-                    const rect = documentPreviewRef.current.getBoundingClientRect();
-                    const scrollLeft = documentPreviewRef.current.scrollLeft || 0;
-                    const scrollTop = documentPreviewRef.current.scrollTop || 0;
+                } else if (isDraggingSignature && pdfWrapperRef.current) {
+                    const rect = pdfWrapperRef.current.getBoundingClientRect();
 
-                    let x = e.clientX - rect.left - dragOffset.x + scrollLeft;
-                    let y = e.clientY - rect.top - dragOffset.y + scrollTop;
+                    let x = e.clientX - rect.left - dragOffset.x;
+                    let y = e.clientY - rect.top - dragOffset.y;
 
                     const maxX = rect.width - signatureSize.width;
                     const maxY = rect.height - signatureSize.height;
@@ -278,7 +267,6 @@ export default function UploadSign() {
                 setIsDraggingSignature(false);
                 setData("x_position", signaturePosition.x);
                 setData("y_position", signaturePosition.y);
-                setData("page_number", currentPage);
             }
             if (isResizingSignature) {
                 setIsResizingSignature(false);
@@ -303,7 +291,7 @@ export default function UploadSign() {
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
         };
-    }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, currentPage, setData]);
+    }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, setData]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -324,24 +312,13 @@ export default function UploadSign() {
             return;
         }
 
-        const iframe = iframeRef.current;
+        const previewElement = pdfWrapperRef.current;
         let previewWidth = 800;
         let previewHeight = 600;
 
-        if (iframe && iframe.contentWindow) {
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc) {
-                    previewWidth = iframeDoc.body.scrollWidth || iframe.offsetWidth || 800;
-                    previewHeight = iframeDoc.body.scrollHeight || iframe.offsetHeight || 600;
-                }
-            } catch (e) {
-                previewWidth = documentPreviewRef.current?.offsetWidth || 800;
-                previewHeight = documentPreviewRef.current?.offsetHeight || 600;
-            }
-        } else {
-            previewWidth = documentPreviewRef.current?.offsetWidth || 800;
-            previewHeight = documentPreviewRef.current?.offsetHeight || 600;
+        if (previewElement) {
+            previewWidth = previewElement.clientWidth;
+            previewHeight = previewElement.clientHeight;
         }
 
         const formData = new FormData();
@@ -351,7 +328,7 @@ export default function UploadSign() {
         formData.append("y_position", signaturePosition.y);
         formData.append("width", signatureSize.width);
         formData.append("height", signatureSize.height);
-        formData.append("page_number", currentPage);
+        formData.append("page_number", pageNumber); // Explicitly use current page number
         formData.append("preview_width", previewWidth);
         formData.append("preview_height", previewHeight);
 
@@ -365,12 +342,12 @@ export default function UploadSign() {
                 setUploadedSignature(null);
                 setSignaturePosition({ x: 50, y: 50 });
                 setSignatureSize({ width: 200, height: 100 });
-                setCurrentPage(1);
+                setPageNumber(1);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = "";
                 }
                 toast.success("Signature Berhasil Disimpan", {
-                    description: `Signature telah ditambahkan pada halaman ${currentPage}.`,
+                    description: `Signature telah ditambahkan.`,
                     duration: 4000,
                 });
             },
@@ -437,94 +414,106 @@ export default function UploadSign() {
                                 )}
                             </div>
 
-                            {previewUrl && uploadedSignature && (
+                            {previewUrl && (
                                 <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                        <div className="flex items-center gap-4">
+                                            <button
+                                                onClick={() => changePage(-1)}
+                                                disabled={pageNumber <= 1}
+                                                className="p-2 rounded-full hover:bg-blue-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                            >
+                                                <FiChevronLeft />
+                                            </button>
+
                                             <span className="text-sm font-semibold text-gray-700">
-                                                Signature akan ditempatkan pada halaman {currentPage}
+                                                Page {pageNumber} of {numPages || '--'}
                                             </span>
+
+                                            <button
+                                                onClick={() => changePage(1)}
+                                                disabled={pageNumber >= numPages}
+                                                className="p-2 rounded-full hover:bg-blue-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                            >
+                                                <FiChevronRight />
+                                            </button>
                                         </div>
-                                        {totalPages > 1 && (
-                                            <span className="text-xs text-gray-500">
-                                                Total: {totalPages} halaman
-                                            </span>
+
+                                        {uploadedSignature && (
+                                            <div className="flex items-center gap-2">
+                                                <FiCheck className="text-green-500" />
+                                                <span className="text-xs text-gray-600">
+                                                    Signature active on this page
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
-                                    <p className="text-xs text-gray-600 mt-2">
-                                        💡 Scroll dokumen untuk mengubah halaman penempatan signature
-                                    </p>
                                 </div>
                             )}
 
                             <div
                                 ref={documentPreviewRef}
-                                className="border-2 border-gray-200 rounded-xl bg-gray-50"
-                                style={{
-                                    height: '600px',
-                                    overflow: 'hidden',
-                                    position: 'relative'
-                                }}
+                                className="border-2 border-gray-200 rounded-xl bg-gray-50 flex items-center justify-center min-h-[600px] relative overflow-hidden"
                             >
                                 {previewUrl ? (
-                                    <div className="relative w-full h-full">
-                                        <iframe
-                                            ref={iframeRef}
-                                            title="Document Preview"
-                                            src={`${previewUrl}#toolbar=0&navpanes=0`}
-                                            className="w-full h-full"
-                                            style={{
-                                                display: 'block',
-                                                border: 'none',
-                                                margin: 0,
-                                                padding: 0
-                                            }}
-                                            scrolling="yes"
-                                            frameBorder="0"
-                                        ></iframe>
-                                        {uploadedSignature && (
-                                            <div
-                                                className="absolute border-2 border-blue-500 rounded-lg shadow-lg bg-white p-1 transition-transform"
-                                                style={{
-                                                    left: `${signaturePosition.x}px`,
-                                                    top: `${signaturePosition.y}px`,
-                                                    width: `${signatureSize.width}px`,
-                                                    height: `${signatureSize.height}px`,
-                                                    zIndex: 10,
-                                                    pointerEvents: "auto",
-                                                    cursor: isDraggingSignature ? 'grabbing' : 'grab',
-                                                }}
-                                            >
-                                                <img
-                                                    ref={signatureRef}
-                                                    src={URL.createObjectURL(uploadedSignature)}
-                                                    alt="Signature"
-                                                    className="w-full h-full object-contain select-none"
-                                                    onMouseDown={handleSignatureMouseDown}
-                                                    draggable={false}
-                                                    style={{
-                                                        pointerEvents: isResizingSignature ? 'none' : 'auto',
-                                                    }}
-                                                />
-                                                <div
-                                                    className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
-                                                    onMouseDown={handleResizeMouseDown}
-                                                    title="Resize signature"
-                                                >
-                                                    <FiMaximize2 className="text-white text-xs transform rotate-45" />
-                                                </div>
-                                                {!isDraggingSignature && !isResizingSignature && (
-                                                    <div className="absolute -top-8 left-0 bg-blue-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                                                        Drag to move • Resize from corner
-                                                    </div>
-                                                )}
+                                    <Document
+                                        file={previewUrl}
+                                        onLoadSuccess={onDocumentLoadSuccess}
+                                        className="max-w-full"
+                                        loading={
+                                            <div className="flex items-center gap-2 text-gray-500">
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-900"></div>
+                                                Loading PDF...
                                             </div>
-                                        )}
-                                    </div>
+                                        }
+                                    >
+                                        <div className="relative inline-block" ref={pdfWrapperRef}>
+                                            <Page
+                                                pageNumber={pageNumber}
+                                                width={containerWidth - 40} // Subtract padding
+                                                renderTextLayer={false}
+                                                renderAnnotationLayer={false}
+                                                className="shadow-lg"
+                                            />
+
+                                            {uploadedSignature && (
+                                                <div
+                                                    className="absolute border-2 border-blue-500 rounded-lg shadow-lg bg-white/20 p-1 transition-transform hover:bg-white/40"
+                                                    style={{
+                                                        left: `${signaturePosition.x}px`,
+                                                        top: `${signaturePosition.y}px`,
+                                                        width: `${signatureSize.width}px`,
+                                                        height: `${signatureSize.height}px`,
+                                                        zIndex: 10,
+                                                        pointerEvents: "auto",
+                                                        cursor: isDraggingSignature ? 'grabbing' : 'grab',
+                                                    }}
+                                                >
+                                                    <img
+                                                        ref={signatureRef}
+                                                        src={URL.createObjectURL(uploadedSignature)}
+                                                        alt="Signature"
+                                                        className="w-full h-full object-contain select-none"
+                                                        onMouseDown={handleSignatureMouseDown}
+                                                        draggable={false}
+                                                        style={{
+                                                            pointerEvents: isResizingSignature ? 'none' : 'auto',
+                                                        }}
+                                                    />
+                                                    <div
+                                                        className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
+                                                        onMouseDown={handleResizeMouseDown}
+                                                        title="Resize signature"
+                                                    >
+                                                        <FiMaximize2 className="text-white text-xs transform rotate-45" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Document>
                                 ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center text-center text-gray-500 bg-white">
-                                        <FiFile className="text-6xl mb-4 text-gray-400" />
+                                    <div className="text-center text-gray-500 p-10">
+                                        <FiFile className="text-6xl mb-4 text-gray-400 mx-auto" />
                                         <p className="text-lg font-semibold text-gray-700">
                                             DOKUMEN MEMO
                                         </p>
