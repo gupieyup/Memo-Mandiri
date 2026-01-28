@@ -15,9 +15,10 @@ class CCHUploadSignController extends Controller
     public function index(){
         $user = Auth::user();
         
-        // Get documents with status "Accept by CCH"
+        // Get documents with status "Accept by CCH" and not yet signed by CCH
         $documents = Document::with(['category', 'area', 'user'])
             ->where('status', 'Accept by CCH')
+            ->where('is_signed_cch', false)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($document) {
@@ -258,6 +259,7 @@ class CCHUploadSignController extends Controller
             $document->signature_y = $request->y_position;
             $document->signature_width = $request->width;
             $document->signature_height = $request->height;
+            $document->is_signed_cch = true;
             $document->save();
             
             // Delete temporary signature file

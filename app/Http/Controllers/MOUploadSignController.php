@@ -15,9 +15,10 @@ class MOUploadSignController extends Controller
     public function index(){
         $user = Auth::user();
         
-        // Get documents with status "Accept by MO"
+        // Get documents with status "Accept by MO" and not yet signed by MO
         $documents = Document::with(['category', 'area', 'user'])
             ->where('status', 'Accept by MO')
+            ->where('is_signed_mo', false)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($document) {
@@ -258,6 +259,7 @@ class MOUploadSignController extends Controller
             $document->signature_y = $request->y_position;
             $document->signature_width = $request->width;
             $document->signature_height = $request->height;
+            $document->is_signed_mo = true;
             $document->save();
             
             // Delete temporary signature file
