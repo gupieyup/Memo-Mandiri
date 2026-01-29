@@ -80,7 +80,7 @@ class MOManageAccountController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:AMO Area,AMO Region',
+            'role' => 'required|in:AMO Area,AMO Region,MO,CCH',
             'area_id' => 'required_if:role,AMO Area|nullable|exists:areas,id',
             'area_ids' => 'required_if:role,AMO Region|array|min:1',
             'area_ids.*' => 'exists:areas,id',
@@ -122,28 +122,17 @@ class MOManageAccountController extends Controller
     {
         $user = User::findOrFail($id);
         
-        // Prevent role change for MO and CCH
-        $allowedRoles = ['AMO Area', 'AMO Region'];
-        if (in_array($user->role, ['MO', 'CCH'])) {
-            $allowedRoles = [$user->role]; // Only allow the same role
-        }
-        
         $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'nullable|string|min:6',
-            'role' => 'required|in:' . implode(',', $allowedRoles),
+            'role' => 'required|in:AMO Area,AMO Region,MO,CCH',
             'area_id' => 'required_if:role,AMO Area|nullable|exists:areas,id',
             'area_ids' => 'required_if:role,AMO Region|array|min:1',
             'area_ids.*' => 'exists:areas,id',
         ], [
             'email.unique' => 'Email sudah terpakai',
         ]);
-        
-        // Ensure role cannot be changed for MO and CCH
-        if (in_array($user->role, ['MO', 'CCH']) && $request->role !== $user->role) {
-            return redirect()->back()->with('error', 'Cannot change role for MO or CCH users');
-        }
         
         DB::beginTransaction();
         try {

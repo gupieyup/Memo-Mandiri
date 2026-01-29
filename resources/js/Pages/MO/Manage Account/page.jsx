@@ -347,14 +347,14 @@ export default function ManageAccount({ auth, users, areas }) {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-700">
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${user.role === 'AMO Area'
-                                                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                                        : user.role === 'AMO Region'
-                                                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                                            : user.role === 'MO'
-                                                                ? 'bg-green-100 text-green-800 border border-green-300'
-                                                                : user.role === 'CCH'
-                                                                    ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                                                                    : 'bg-gray-100 text-gray-800 border border-gray-300'
+                                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                                    : user.role === 'AMO Region'
+                                                        ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                                        : user.role === 'MO'
+                                                            ? 'bg-green-100 text-green-800 border border-green-300'
+                                                            : user.role === 'CCH'
+                                                                ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                                                : 'bg-gray-100 text-gray-800 border border-gray-300'
                                                     }`}>
                                                     {user.role}
                                                 </span>
@@ -517,22 +517,14 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 area_ids: [],
                                             });
                                         }}
-                                        disabled={selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')}
                                         required
-                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')
-                                                ? 'bg-gray-100 cursor-not-allowed opacity-60'
-                                                : ''
-                                            }`}
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     >
                                         <option value="AMO Area">AMO Area</option>
                                         <option value="AMO Region">AMO Region</option>
-                                        {selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH') && (
-                                            <option value={selectedUser.role}>{selectedUser.role}</option>
-                                        )}
+                                        <option value="MO">MO</option>
+                                        <option value="CCH">CCH</option>
                                     </select>
-                                    {selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH') && (
-                                        <p className="text-xs text-gray-500 mt-1">Role tidak dapat diubah untuk user MO dan CCH</p>
-                                    )}
                                 </div>
 
                                 {/* Area Selection */}
