@@ -4,7 +4,7 @@ import MOLayout from "../../../Layouts/MOLayout";
 import { FiEdit, FiTrash2, FiPlus, FiX } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
 
-export default function ManageAccount({ auth, users, areas }) {
+export default function ManageAccount({ auth, users, areas, moCount, cchCount }) {
     const { flash } = usePage().props;
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -371,15 +371,18 @@ export default function ManageAccount({ auth, users, areas }) {
                                                     >
                                                         <FiEdit className="text-lg" />
                                                     </button>
-                                                    {!(user.role === 'MO' || user.role === 'CCH') && (
-                                                        <button
-                                                            onClick={() => openDeleteModal(user)}
-                                                            className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
-                                                            title="Delete"
-                                                        >
-                                                            <FiTrash2 className="text-lg" />
-                                                        </button>
-                                                    )}
+                                                    {!(
+                                                        (user.role === 'MO' && moCount <= 1) ||
+                                                        (user.role === 'CCH' && cchCount <= 1)
+                                                    ) && (
+                                                            <button
+                                                                onClick={() => openDeleteModal(user)}
+                                                                className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
+                                                                title="Delete"
+                                                            >
+                                                                <FiTrash2 className="text-lg" />
+                                                            </button>
+                                                        )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -517,14 +520,27 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 area_ids: [],
                                             });
                                         }}
+                                        disabled={selectedUser && (
+                                            (selectedUser.role === 'MO' && moCount <= 1) ||
+                                            (selectedUser.role === 'CCH' && cchCount <= 1)
+                                        )}
                                         required
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${selectedUser && ((selectedUser.role === 'MO' && moCount <= 1) || (selectedUser.role === 'CCH' && cchCount <= 1))
+                                                ? 'bg-gray-100 cursor-not-allowed opacity-60'
+                                                : ''
+                                            }`}
                                     >
                                         <option value="AMO Area">AMO Area</option>
                                         <option value="AMO Region">AMO Region</option>
                                         <option value="MO">MO</option>
                                         <option value="CCH">CCH</option>
                                     </select>
+                                    {selectedUser && (selectedUser.role === 'MO' && moCount <= 1) && (
+                                        <p className="text-xs text-red-500 mt-1">Role cannot be changed (Must have at least one MO)</p>
+                                    )}
+                                    {selectedUser && (selectedUser.role === 'CCH' && cchCount <= 1) && (
+                                        <p className="text-xs text-red-500 mt-1">Role cannot be changed (Must have at least one CCH)</p>
+                                    )}
                                 </div>
 
                                 {/* Area Selection */}

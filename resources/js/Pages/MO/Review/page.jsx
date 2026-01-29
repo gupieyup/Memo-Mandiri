@@ -56,25 +56,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const handleStatusChange = (value) => {
         setStatusFilter(value);
         const params = {};
-        
+
         if (value) {
             params.status = value;
         }
-        
+
         if (selectedArea && selectedArea !== "all") {
             params.area_id = selectedArea;
         }
-        
+
         if (selectedCategory && selectedCategory !== "all") {
             params.category_id = selectedCategory;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/mo/review", params, {
             preserveState: true,
             preserveScroll: true,
@@ -84,25 +84,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const handleCategoryChange = (value) => {
         setSelectedCategory(value);
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (selectedArea && selectedArea !== "all") {
             params.area_id = selectedArea;
         }
-        
+
         if (value && value !== "all") {
             params.category_id = value;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/mo/review", params, {
             preserveState: true,
             preserveScroll: true,
@@ -112,25 +112,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const handleAreaChange = (value) => {
         setSelectedArea(value);
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (selectedCategory && selectedCategory !== "all") {
             params.category_id = selectedCategory;
         }
-        
+
         if (value && value !== "all") {
             params.area_id = value;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/mo/review", params, {
             preserveState: true,
             preserveScroll: true,
@@ -139,25 +139,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
 
     const handleSearch = () => {
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (selectedArea && selectedArea !== "all") {
             params.area_id = selectedArea;
         }
-        
+
         if (selectedCategory && selectedCategory !== "all") {
             params.category_id = selectedCategory;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/mo/review", params, {
             preserveState: true,
             preserveScroll: true,
@@ -167,25 +167,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const handlePerPageChange = (newPerPage) => {
         setPerPage(newPerPage);
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (selectedArea && selectedArea !== "all") {
             params.area_id = selectedArea;
         }
-        
+
         if (selectedCategory && selectedCategory !== "all") {
             params.category_id = selectedCategory;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = newPerPage;
-        
+
         router.get("/mo/review", params, {
             preserveState: true,
             preserveScroll: true,
@@ -204,7 +204,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     };
 
     const getDownloadUrl = (documentId) => `/mo/download-review-document/${documentId}`;
-    
+
     const notifyDownload = () => {
         toast.success("Download Berhasil", {
             description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
@@ -531,6 +531,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                 <tr>
                                     <th className="px-6 py-4 text-left text-sm font-bold">No</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold">Judul Dokumen</th>
+                                    <th className="px-6 py-4 text-left text-sm font-bold">Nama Pengguna</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold">Kategori</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold">Periode</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold">Area</th>
@@ -543,61 +544,64 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                     documents.data.map((doc, index) => {
                                         const rowNumber = (documents.current_page - 1) * documents.per_page + index + 1;
                                         return (
-                                        <tr
-                                            key={doc.id}
-                                            className="hover:bg-blue-50 transition-colors"
-                                        >
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {rowNumber}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                                                {doc.judul}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {doc.category?.nama || "-"}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {formatDate(doc.periode_mulai)} -{" "}
-                                                {formatDate(doc.periode_selesai)}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {doc.area?.nama || "-"}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span
-                                                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusBadgeClass(
-                                                        doc.status
-                                                    )}`}
-                                                >
-                                                    {doc.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => openReviewModal(doc)}
-                                                        className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
-                                                        title="Review"
+                                            <tr
+                                                key={doc.id}
+                                                className="hover:bg-blue-50 transition-colors"
+                                            >
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {rowNumber}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                                                    {doc.judul}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {doc.user?.nama || "-"}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {doc.category?.nama || "-"}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {formatDate(doc.periode_mulai)} -{" "}
+                                                    {formatDate(doc.periode_selesai)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {doc.area?.nama || "-"}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusBadgeClass(
+                                                            doc.status
+                                                        )}`}
                                                     >
-                                                        <FiEdit className="text-lg" />
-                                                    </button>
-                                                    <a
-                                                        href={getDownloadUrl(doc.id)}
-                                                        onClick={notifyDownload}
-                                                        className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all"
-                                                        title="Download"
-                                                    >
-                                                        <FiDownload className="text-lg" />
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                        {doc.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => openReviewModal(doc)}
+                                                            className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
+                                                            title="Review"
+                                                        >
+                                                            <FiEdit className="text-lg" />
+                                                        </button>
+                                                        <a
+                                                            href={getDownloadUrl(doc.id)}
+                                                            onClick={notifyDownload}
+                                                            className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all"
+                                                            title="Download"
+                                                        >
+                                                            <FiDownload className="text-lg" />
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         );
                                     })
                                 ) : (
                                     <tr>
                                         <td
-                                            colSpan="7"
+                                            colSpan="8"
                                             className="px-6 py-12 text-center text-gray-500"
                                         >
                                             <div className="flex flex-col items-center justify-center">
@@ -608,7 +612,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                     No Documents Found
                                                 </p>
                                                 <p className="text-sm text-gray-500">
-                                                    {(statusFilter || (selectedArea && selectedArea !== "all") || (selectedCategory && selectedCategory !== "all") || searchQuery) 
+                                                    {(statusFilter || (selectedArea && selectedArea !== "all") || (selectedCategory && selectedCategory !== "all") || searchQuery)
                                                         ? "No documents match your filter criteria"
                                                         : "No documents available for review"
                                                     }

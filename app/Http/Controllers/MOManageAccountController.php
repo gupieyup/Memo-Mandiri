@@ -71,6 +71,8 @@ class MOManageAccountController extends Controller
             ],
             'users' => $users,
             'areas' => $areas,
+            'moCount' => User::where('role', 'MO')->count(),
+            'cchCount' => User::where('role', 'CCH')->count(),
         ]);
     }
     
@@ -134,6 +136,21 @@ class MOManageAccountController extends Controller
             'email.unique' => 'Email sudah terpakai',
         ]);
         
+        // Prevent changing role if it's the last MO or CCH
+        if ($user->role === 'MO' && $request->role !== 'MO') {
+            $moCount = User::where('role', 'MO')->count();
+            if ($moCount <= 1) {
+                return redirect()->back()->with('error', 'Cannot change role: System must have at least one MO');
+            }
+        }
+        
+        if ($user->role === 'CCH' && $request->role !== 'CCH') {
+            $cchCount = User::where('role', 'CCH')->count();
+            if ($cchCount <= 1) {
+                return redirect()->back()->with('error', 'Cannot change role: System must have at least one CCH');
+            }
+        }
+        
         DB::beginTransaction();
         try {
             // Update user
@@ -191,8 +208,19 @@ class MOManageAccountController extends Controller
         $user = User::findOrFail($id);
         
         // Prevent deleting MO or CCH users
-        if (in_array($user->role, ['MO', 'CCH'])) {
-            return redirect()->back()->with('error', 'Cannot delete MO or CCH users');
+        // Prevent deleting last MO or CCH
+        if ($user->role === 'MO') {
+            $moCount = User::where('role', 'MO')->count();
+            if ($moCount <= 1) {
+                return redirect()->back()->with('error', 'Cannot delete: System must have at least one MO');
+            }
+        }
+        
+        if ($user->role === 'CCH') {
+            $cchCount = User::where('role', 'CCH')->count();
+            if ($cchCount <= 1) {
+                return redirect()->back()->with('error', 'Cannot delete: System must have at least one CCH');
+            }
         }
         
         DB::beginTransaction();
