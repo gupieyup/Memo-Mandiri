@@ -202,11 +202,11 @@ export default function ManageAccount({ auth, users, areas }) {
                 },
                 onError: (serverErrors) => {
                     const newErrors = {
-                        nama: serverErrors.nama ? serverErrors.nama[0] : "",
-                        email: serverErrors.email ? serverErrors.email[0] : "",
-                        password: serverErrors.password ? serverErrors.password[0] : "",
-                        area_id: serverErrors.area_id ? serverErrors.area_id[0] : "",
-                        area_ids: serverErrors.area_ids ? serverErrors.area_ids[0] : "",
+                        nama: serverErrors.nama || "",
+                        email: serverErrors.email || "",
+                        password: serverErrors.password || "",
+                        area_id: serverErrors.area_id || "",
+                        area_ids: serverErrors.area_ids || "",
                     };
                     setErrors(newErrors);
                     if (serverErrors.message) {
@@ -224,11 +224,11 @@ export default function ManageAccount({ auth, users, areas }) {
                 },
                 onError: (serverErrors) => {
                     const newErrors = {
-                        nama: serverErrors.nama ? serverErrors.nama[0] : "",
-                        email: serverErrors.email ? serverErrors.email[0] : "",
-                        password: serverErrors.password ? serverErrors.password[0] : "",
-                        area_id: serverErrors.area_id ? serverErrors.area_id[0] : "",
-                        area_ids: serverErrors.area_ids ? serverErrors.area_ids[0] : "",
+                        nama: serverErrors.nama || "",
+                        email: serverErrors.email || "",
+                        password: serverErrors.password || "",
+                        area_id: serverErrors.area_id || "",
+                        area_ids: serverErrors.area_ids || "",
                     };
                     setErrors(newErrors);
                     if (serverErrors.message) {
@@ -346,17 +346,16 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 {user.password}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-700">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                                                    user.role === 'AMO Area' 
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${user.role === 'AMO Area'
                                                         ? 'bg-blue-100 text-blue-800 border border-blue-300'
                                                         : user.role === 'AMO Region'
-                                                        ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                                        : user.role === 'MO'
-                                                        ? 'bg-green-100 text-green-800 border border-green-300'
-                                                        : user.role === 'CCH'
-                                                        ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                                                        : 'bg-gray-100 text-gray-800 border border-gray-300'
-                                                }`}>
+                                                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                                            : user.role === 'MO'
+                                                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                                                : user.role === 'CCH'
+                                                                    ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                                                    : 'bg-gray-100 text-gray-800 border border-gray-300'
+                                                    }`}>
                                                     {user.role}
                                                 </span>
                                             </td>
@@ -448,9 +447,8 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 setErrors({ ...errors, nama: "" });
                                             }
                                         }}
-                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                                            errors.nama ? "border-red-500" : "border-gray-300"
-                                        }`}
+                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.nama ? "border-red-500" : "border-gray-300"
+                                            }`}
                                         placeholder="Enter user name"
                                     />
                                     {errors.nama && (
@@ -472,9 +470,8 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 setErrors({ ...errors, email: "" });
                                             }
                                         }}
-                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                                            errors.email ? "border-red-500" : "border-gray-300"
-                                        }`}
+                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.email ? "border-red-500" : "border-gray-300"
+                                            }`}
                                         placeholder="Enter email address"
                                     />
                                     {errors.email && (
@@ -496,9 +493,8 @@ export default function ManageAccount({ auth, users, areas }) {
                                                 setErrors({ ...errors, password: "" });
                                             }
                                         }}
-                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                                            errors.password ? "border-red-500" : "border-gray-300"
-                                        }`}
+                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.password ? "border-red-500" : "border-gray-300"
+                                            }`}
                                         placeholder={selectedUser ? "Leave blank to keep current password" : "Enter password (min 6 characters)"}
                                     />
                                     {errors.password && (
@@ -523,11 +519,10 @@ export default function ManageAccount({ auth, users, areas }) {
                                         }}
                                         disabled={selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')}
                                         required
-                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                                            selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')
+                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${selectedUser && (selectedUser.role === 'MO' || selectedUser.role === 'CCH')
                                                 ? 'bg-gray-100 cursor-not-allowed opacity-60'
                                                 : ''
-                                        }`}
+                                            }`}
                                     >
                                         <option value="AMO Area">AMO Area</option>
                                         <option value="AMO Region">AMO Region</option>
@@ -554,9 +549,8 @@ export default function ManageAccount({ auth, users, areas }) {
                                                     setErrors({ ...errors, area_id: "" });
                                                 }
                                             }}
-                                            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                                                errors.area_id ? "border-red-500" : "border-gray-300"
-                                            }`}
+                                            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.area_id ? "border-red-500" : "border-gray-300"
+                                                }`}
                                         >
                                             <option value="">Select Area</option>
                                             {areas && areas.map((area) => (
@@ -575,9 +569,8 @@ export default function ManageAccount({ auth, users, areas }) {
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                                             Areas <span className="text-red-500">*</span>
                                         </label>
-                                        <div className={`border-2 rounded-xl p-4 max-h-48 overflow-y-auto ${
-                                            errors.area_ids ? "border-red-500" : "border-gray-300"
-                                        }`}>
+                                        <div className={`border-2 rounded-xl p-4 max-h-48 overflow-y-auto ${errors.area_ids ? "border-red-500" : "border-gray-300"
+                                            }`}>
                                             {areas && areas.length > 0 ? (
                                                 <div className="space-y-2">
                                                     {areas.map((area) => (

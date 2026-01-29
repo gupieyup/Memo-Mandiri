@@ -84,6 +84,8 @@ class MOManageAccountController extends Controller
             'area_id' => 'required_if:role,AMO Area|nullable|exists:areas,id',
             'area_ids' => 'required_if:role,AMO Region|array|min:1',
             'area_ids.*' => 'exists:areas,id',
+        ], [
+            'email.unique' => 'Email sudah terpakai',
         ]);
         
         DB::beginTransaction();
@@ -134,6 +136,8 @@ class MOManageAccountController extends Controller
             'area_id' => 'required_if:role,AMO Area|nullable|exists:areas,id',
             'area_ids' => 'required_if:role,AMO Region|array|min:1',
             'area_ids.*' => 'exists:areas,id',
+        ], [
+            'email.unique' => 'Email sudah terpakai',
         ]);
         
         // Ensure role cannot be changed for MO and CCH
