@@ -208,7 +208,8 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const openReviewModal = (document) => {
         setSelectedDocument(document);
         setReviewNotes(document.notes || "");
-        setSelectedStatus(document.status);
+        // If status is On Process, default to Revision, otherwise keep current status
+        setSelectedStatus(document.status === "On Process" ? "Revision by AMO Region" : document.status);
         setShowReviewModal(true);
     };
 
@@ -244,8 +245,10 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                     closeReviewModal();
                 },
                 onError: (errors) => {
+                    // Get the first error message if available, otherwise fallback to generic message
+                    const errorMessage = Object.values(errors)[0] || "Terjadi kesalahan saat menyimpan review.";
                     toast.error("Gagal menyimpan review", {
-                        description: errors.message || "Terjadi kesalahan saat menyimpan review.",
+                        description: errorMessage,
                         duration: 3000,
                     });
                 },
