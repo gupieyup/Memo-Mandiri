@@ -264,17 +264,10 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             },
             {
                 onSuccess: () => {
-                    toast.success("Review berhasil disimpan", {
-                        description: "Status dokumen telah diperbarui.",
-                        duration: 3000,
-                    });
                     closeReviewModal();
                 },
                 onError: (errors) => {
-                    toast.error("Gagal menyimpan review", {
-                        description: errors.message || "Terjadi kesalahan saat menyimpan review.",
-                        duration: 3000,
-                    });
+                    // Error handling logic if needed, or leave empty if global error handler exists
                 },
             }
         );

@@ -134,7 +134,7 @@ class CCHReviewController extends Controller
             ]);
         }
         
-        return redirect()->back()->with('success', 'Document status updated successfully');
+        return redirect()->back()->with('success', 'Review dokumen berhasil disimpan');
     }
     
     public function download($id)

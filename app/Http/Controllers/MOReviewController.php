@@ -171,7 +171,7 @@ class MOReviewController extends Controller
                 Log::info('Feedback created', ['feedback_id' => $feedback->id]);
             }
             
-            return redirect()->back()->with('success', 'Review berhasil disimpan');
+            return redirect()->back()->with('success', 'Review dokumen berhasil disimpan');
             
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error', [
