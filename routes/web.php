@@ -12,6 +12,7 @@ use App\Http\Controllers\MOUploadSignController;
 use App\Http\Controllers\RegionHomeController;
 use App\Http\Controllers\RegionReviewController;
 use App\Http\Controllers\RegionUploadController;
+use App\Http\Controllers\RegionUploadSignController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -86,6 +87,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/update-review-status/{id}', [RegionReviewController::class, 'updateStatus'])->name('update-review-status');
         Route::get('/download-review-document/{id}', [RegionReviewController::class, 'download'])->name('download-review-document');
         Route::get('/preview-review-document/{id}', [RegionReviewController::class, 'preview'])->name('preview-review-document');
+
+        // Upload Signature
+        Route::get('/upload-signature', [RegionUploadSignController::class, 'index'])->name('upload-signature');
+        Route::get('/preview-signature-document/{id}', [RegionUploadSignController::class, 'preview'])->name('preview-signature-document');
+        Route::post('/upload-signature', [RegionUploadSignController::class, 'store'])->name('upload-signature.store');
     });
 
     // MO routes

@@ -1,6 +1,6 @@
 import React from "react";
 import { usePage } from "@inertiajs/react";
-import { FiUpload, FiHome } from "react-icons/fi";
+import { FiUpload, FiHome, FiPenTool } from "react-icons/fi";
 import { TbLogout } from "react-icons/tb";
 import { MdOutlineReviews } from "react-icons/md";
 
@@ -15,6 +15,11 @@ const RegionSidebar = ({ handleLogout }) => {
             label: "Upload Document",
         },
         { href: "/amo-region/review", icon: MdOutlineReviews, label: "Review" },
+        {
+            href: "/amo-region/upload-signature",
+            icon: FiPenTool,
+            label: "Upload Signature",
+        },
     ];
 
     return (
@@ -55,33 +60,29 @@ const RegionSidebar = ({ handleLogout }) => {
                                 <a
                                     key={index}
                                     href={item.href}
-                                    className={`group flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 relative ${
-                                        isActive
-                                            ? "bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-200/50 scale-[1.02]"
-                                            : "hover:bg-white/80 hover:shadow-md hover:scale-[1.01]"
-                                    }`}
+                                    className={`group flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 relative ${isActive
+                                        ? "bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-200/50 scale-[1.02]"
+                                        : "hover:bg-white/80 hover:shadow-md hover:scale-[1.01]"
+                                        }`}
                                 >
                                     <div
-                                        className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 mr-3 ${
-                                            isActive
-                                                ? "bg-white/20"
-                                                : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200"
-                                        }`}
+                                        className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 mr-3 ${isActive
+                                            ? "bg-white/20"
+                                            : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200"
+                                            }`}
                                     >
                                         <IconComponent
-                                            className={`text-lg transition-colors duration-300 ${
-                                                isActive
-                                                    ? "text-white"
-                                                    : "text-gray-700 group-hover:text-blue-600"
-                                            }`}
+                                            className={`text-lg transition-colors duration-300 ${isActive
+                                                ? "text-white"
+                                                : "text-gray-700 group-hover:text-blue-600"
+                                                }`}
                                         />
                                     </div>
                                     <span
-                                        className={`font-semibold text-sm tracking-wide transition-colors duration-300 ${
-                                            isActive
-                                                ? "text-white"
-                                                : "text-gray-700 group-hover:text-blue-600"
-                                        }`}
+                                        className={`font-semibold text-sm tracking-wide transition-colors duration-300 ${isActive
+                                            ? "text-white"
+                                            : "text-gray-700 group-hover:text-blue-600"
+                                            }`}
                                     >
                                         {item.label}
                                     </span>

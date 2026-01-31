@@ -28,6 +28,7 @@ class Document extends Model
         'signature_page',
         'signature_x',
         'signature_y',
+        'is_signed_region',
         'is_signed_mo',
         'is_signed_cch',
         'signature_width',
