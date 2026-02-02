@@ -28,26 +28,12 @@ class MOReviewController extends Controller
         // Build query
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
         
-        // Filter by user role and status
+        // Filter by user role (AMO Area or AMO Region) and status (not Draft)
         $query->where(function ($q) {
-            // Documents from AMO Area with specific statuses
             $q->whereHas('user', function ($userQuery) {
-                $userQuery->where('role', 'AMO Area');
-            })->whereIn('status', [
-                'Accept by AMO Region',
-                'Revision by MO',
-                'Accept by MO'
-            ]);
-            
-            // OR Documents from AMO Region with specific statuses (including On Process)
-            $q->orWhereHas('user', function ($userQuery) {
-                $userQuery->where('role', 'AMO Region');
-            })->whereIn('status', [
-                'On Process',
-                'Revision by MO',
-                'Accept by MO'
-            ]);
-        });
+                $userQuery->whereIn('role', ['AMO Area', 'AMO Region']);
+            });
+        })->where('status', '!=', 'Draft');
         
         // Apply search filter if provided
         if ($searchQuery) {
@@ -77,11 +63,17 @@ class MOReviewController extends Controller
         $categories = Category::select('id', 'nama')->get();
         
         // Get all unique statuses for filter dropdown (MO specific statuses)
+        // Get all unique statuses for filter dropdown
         $statuses = [
             'On Process',
+            'Revision by AMO Region',
+            'Reject by AMO Region',
             'Accept by AMO Region',
             'Revision by MO',
-            'Accept by MO'
+            'Reject by MO',
+            'Accept by MO',
+            'Accept by CCH',
+            'Reject by CCH'
         ];
         
         return Inertia::render("MO/Review/page", [
@@ -123,7 +115,7 @@ class MOReviewController extends Controller
             ]);
 
             $validated = $request->validate([
-                'status' => 'required|in:Revision by MO,Accept by MO',
+                'status' => 'required|in:Accept by MO,Reject by MO',
                 'notes' => 'nullable|string',
             ]);
             
@@ -135,12 +127,8 @@ class MOReviewController extends Controller
             ]);
             
             // Check if document can be reviewed by MO
-            if (!in_array($document->status, [
-                'On Process',
-                'Accept by AMO Region', 
-                'Revision by MO', 
-                'Accept by MO'
-            ])) {
+            // Allowed if "On Process" or "Accept by AMO Region"
+            if (!in_array($document->status, ['On Process', 'Accept by AMO Region'])) {
                 Log::warning('Document status not allowed for review', [
                     'current_status' => $document->status
                 ]);
@@ -222,13 +210,8 @@ class MOReviewController extends Controller
     {
         $document = Document::findOrFail($id);
         
-        // MO can preview documents that are available for review
-        if (!in_array($document->status, [
-            'On Process',
-            'Accept by AMO Region', 
-            'Revision by MO', 
-            'Accept by MO'
-        ])) {
+        // MO can preview documents that are not Draft
+        if ($document->status === 'Draft') {
             abort(403, 'Document is not available for preview');
         }
         

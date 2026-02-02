@@ -240,7 +240,7 @@ class DocumentSeeder extends Seeder
                 'file_path' => 'documents/documents.pdf',
                 'file_size' => $fileSize,
                 'file_type' => 'application/pdf',
-                'area_id' => 4,
+                'area_id' => 2,
                 'user_id' => 7,
                 'category_id' => 11,
                 'notes' => null,

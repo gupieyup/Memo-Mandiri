@@ -15,6 +15,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
     // Show toast notifications for flash messages
     useEffect(() => {
@@ -208,8 +209,18 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const openReviewModal = (document) => {
         setSelectedDocument(document);
         setReviewNotes(document.notes || "");
-        // If status is On Process, default to Revision, otherwise keep current status
-        setSelectedStatus(document.status === "On Process" ? "Revision by AMO Region" : document.status);
+
+        // Check if editable
+        const editable = document.status === "On Process";
+        setIsReadOnly(!editable);
+
+        if (editable) {
+            // Default to Accept if On Process, or keep current if valid
+            setSelectedStatus("Accept by AMO Region");
+        } else {
+            setSelectedStatus(document.status);
+        }
+
         setShowReviewModal(true);
     };
 
@@ -253,9 +264,21 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             case "On Process":
                 return "bg-yellow-100 text-yellow-800 border border-yellow-300";
             case "Revision by AMO Region":
+                return "bg-orange-100 text-orange-800 border border-orange-300";
+            case "Reject by AMO Region":
                 return "bg-red-100 text-red-800 border border-red-300";
             case "Accept by AMO Region":
                 return "bg-green-100 text-green-800 border border-green-300";
+            case "Revision by MO":
+                return "bg-orange-100 text-orange-800 border border-orange-300";
+            case "Reject by MO":
+                return "bg-red-100 text-red-800 border border-red-300";
+            case "Accept by MO":
+                return "bg-green-100 text-green-800 border border-green-300";
+            case "Accept by CCH":
+                return "bg-blue-100 text-blue-800 border border-blue-300";
+            case "Reject by CCH":
+                return "bg-red-100 text-red-800 border border-red-300";
             default:
                 return "bg-gray-100 text-gray-800 border border-gray-300";
         }
@@ -646,7 +669,8 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                             onChange={(e) => setReviewNotes(e.target.value)}
                                             placeholder="Add your review notes here..."
                                             rows="6"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                            readOnly={isReadOnly}
+                                            className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${isReadOnly ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                                         />
                                     </div>
 
@@ -655,14 +679,20 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                         <label className="block text-lg font-bold text-gray-800 mb-3">
                                             Label
                                         </label>
-                                        <select
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        >
-                                            <option value="Revision by AMO Region">Revision by AMO Region</option>
-                                            <option value="Accept by AMO Region">Accept by AMO Region</option>
-                                        </select>
+                                        {isReadOnly ? (
+                                            <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-500 font-medium">
+                                                {selectedStatus}
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            >
+                                                <option value="Accept by AMO Region">Accept by AMO Region</option>
+                                                <option value="Reject by AMO Region">Reject by AMO Region</option>
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -707,12 +737,14 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={handleSaveReview}
-                                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-                            >
-                                Save
-                            </button>
+                            {!isReadOnly && (
+                                <button
+                                    onClick={handleSaveReview}
+                                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                                >
+                                    Save
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

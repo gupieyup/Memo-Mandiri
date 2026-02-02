@@ -27,16 +27,22 @@ class RegionReviewController extends Controller
         // Build query
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
         
-        // Filter by status - AMO Region sees documents that are "On Process" or need review
-        $query->whereIn('status', [
-            'On Process',
-            'Revision by AMO Region',
-            'Accept by AMO Region'
-        ]);
+        // Filter by status - AMO Region sees all documents except Draft
+        $query->where('status', '!=', 'Draft');
         
-        // Filter documents only from users with role "AMO Area"
-        $query->whereHas('user', function ($q) {
+        // Filter by managed areas (UserAreaResponsibility)
+        // STRICT: Checking Uploader's Area, not just Document's Area (though provided they should match)
+        // "dokumen yang diunggah oleh user amo area dengan area yang terkait"
+        $managedAreaIds = $user->areaResponsibilities()->pluck('area_id')->toArray();
+        
+        $query->whereHas('user', function ($q) use ($managedAreaIds) {
             $q->where('role', 'AMO Area');
+            
+            if (!empty($managedAreaIds)) {
+                $q->whereIn('area_id', $managedAreaIds);
+            } else {
+                $q->whereNull('id'); // Force fail if no managed areas
+            }
         });
         
         // Apply search filter if provided
@@ -63,16 +69,26 @@ class RegionReviewController extends Controller
         $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
         // Get all areas and categories for filters, excluding "Region"
-        $areas = Area::select('id', 'nama')
-            ->where('nama', '!=', 'Region')
-            ->get();
+        // Only show managed areas in the filter dropdown
+        $areasQuery = Area::select('id', 'nama')->where('nama', '!=', 'Region');
+        
+        if (!empty($managedAreaIds)) {
+            $areasQuery->whereIn('id', $managedAreaIds);
+        }
+        
+        $areas = $areasQuery->get();
         $categories = Category::select('id', 'nama')->get();
         
         // Get all unique statuses for filter dropdown (AMO Region specific statuses)
         $statuses = [
             'On Process',
             'Revision by AMO Region',
-            'Accept by AMO Region'
+            'Reject by AMO Region',
+            'Accept by AMO Region',
+            'Accept by MO',
+            'Reject by MO',
+            'Accept by CCH',
+            'Reject by CCH'
         ];
         
         return Inertia::render("AMO Region/Review/page", [
@@ -105,7 +121,7 @@ class RegionReviewController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:Revision by AMO Region,Accept by AMO Region',
+            'status' => 'required|in:Accept by AMO Region,Reject by AMO Region',
             'notes' => 'nullable|string',
         ]);
         
@@ -117,6 +133,17 @@ class RegionReviewController extends Controller
         }
         
         $user = Auth::user();
+        
+        // Check if document belongs to a managed area (via Uploader)
+        $managedAreaIds = $user->areaResponsibilities()->pluck('area_id')->toArray();
+        if (!in_array($document->user->area_id, $managedAreaIds)) {
+            abort(403, 'Unauthorized access to this area');
+        }
+        
+        // Only allow editing if status is "On Process"
+        if ($document->status !== 'On Process') {
+            return redirect()->back()->with('error', 'Dokumen hanya dapat diedit saat status On Process');
+        }
         
         // Update document status
         $document->status = $request->status;
@@ -144,6 +171,13 @@ class RegionReviewController extends Controller
     {
         $document = Document::findOrFail($id);
         
+        // Check if document belongs to a managed area (via Uploader)
+        $user = Auth::user();
+        $managedAreaIds = $user->areaResponsibilities()->pluck('area_id')->toArray();
+        if (!in_array($document->user->area_id, $managedAreaIds)) {
+            abort(403, 'Unauthorized access to this area');
+        }
+
         // Check if document is from user with role "AMO Area"
         if ($document->user->role !== 'AMO Area') {
             abort(403, 'Unauthorized access');
@@ -175,11 +209,18 @@ class RegionReviewController extends Controller
     {
         $document = Document::findOrFail($id);
         
-        // AMO Region can preview documents that are "On Process" or need review
-        if (!in_array($document->status, ['On Process', 'Revision by AMO Region', 'Accept by AMO Region'])) {
+        // AMO Region can preview documents that are not Draft
+        if ($document->status === 'Draft') {
             abort(403, 'Document is not available for preview');
         }
         
+        // Check if document belongs to a managed area (via Uploader)
+        $user = Auth::user();
+        $managedAreaIds = $user->areaResponsibilities()->pluck('area_id')->toArray();
+        if (!in_array($document->user->area_id, $managedAreaIds)) {
+            abort(403, 'Unauthorized access to this area');
+        }
+
         // Check if document is from user with role "AMO Area"
         if ($document->user->role !== 'AMO Area') {
             abort(403, 'Document is not available for preview');

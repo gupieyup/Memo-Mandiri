@@ -15,6 +15,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
+    const [isReadOnly, setIsReadOnly] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Show toast notifications for flash messages
@@ -220,9 +221,13 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const openReviewModal = (document) => {
         setSelectedDocument(document);
         setReviewNotes(document.notes || "");
-        // Set default status based on current document status
-        if (document.status === "Accept by AMO Region" || document.status === "On Process") {
-            setSelectedStatus("Revision by MO");
+
+        // Allowed if "On Process" or "Accept by AMO Region"
+        const editable = ["On Process", "Accept by AMO Region"].includes(document.status);
+        setIsReadOnly(!editable);
+
+        if (editable) {
+            setSelectedStatus("Accept by MO");
         } else {
             setSelectedStatus(document.status);
         }
@@ -289,13 +294,23 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case "On Process":
-                return "bg-blue-100 text-blue-800 border border-blue-300";
-            case "Accept by AMO Region":
                 return "bg-yellow-100 text-yellow-800 border border-yellow-300";
+            case "Revision by AMO Region":
+                return "bg-orange-100 text-orange-800 border border-orange-300";
+            case "Reject by AMO Region":
+                return "bg-red-100 text-red-800 border border-red-300";
+            case "Accept by AMO Region":
+                return "bg-green-100 text-green-800 border border-green-300";
             case "Revision by MO":
+                return "bg-orange-100 text-orange-800 border border-orange-300";
+            case "Reject by MO":
                 return "bg-red-100 text-red-800 border border-red-300";
             case "Accept by MO":
                 return "bg-green-100 text-green-800 border border-green-300";
+            case "Accept by CCH":
+                return "bg-blue-100 text-blue-800 border border-blue-300";
+            case "Reject by CCH":
+                return "bg-red-100 text-red-800 border border-red-300";
             default:
                 return "bg-gray-100 text-gray-800 border border-gray-300";
         }
@@ -686,7 +701,8 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                             onChange={(e) => setReviewNotes(e.target.value)}
                                             placeholder="Add your review notes here..."
                                             rows="6"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                            readOnly={isReadOnly}
+                                            className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${isReadOnly ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                                         />
                                     </div>
 
@@ -695,14 +711,20 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                         <label className="block text-lg font-bold text-gray-800 mb-3">
                                             Label
                                         </label>
-                                        <select
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        >
-                                            <option value="Revision by MO">Revision by MO</option>
-                                            <option value="Accept by MO">Accept by MO</option>
-                                        </select>
+                                        {isReadOnly ? (
+                                            <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-500 font-medium">
+                                                {selectedStatus}
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            >
+                                                <option value="Accept by MO">Accept by MO</option>
+                                                <option value="Reject by MO">Reject by MO</option>
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -748,23 +770,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={handleSaveReview}
-                                disabled={isSubmitting}
-                                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Menyimpan...
-                                    </>
-                                ) : (
-                                    'Save'
-                                )}
-                            </button>
+                            {!isReadOnly && (
+                                <button
+                                    onClick={handleSaveReview}
+                                    disabled={isSubmitting}
+                                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Menyimpan...
+                                        </>
+                                    ) : (
+                                        'Save'
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
