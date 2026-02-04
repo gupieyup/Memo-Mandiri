@@ -325,13 +325,10 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                 </div>
 
                 {/* Filter and Table Section */}
-                <div className="bg-white rounded-2xl shadow-xl p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 border-l-4 border-yellow-500 pl-4">
-                        Daftar MEMO
-                    </h2>
-
-                    {/* Filters */}
-                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b-2 border-blue-100 mb-6 rounded-xl">
+                {/* Main Content Card */}
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    {/* Header with Filters */}
+                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b-2 border-blue-100">
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                             <div className="md:col-span-3">
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -403,7 +400,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                     handleSearch();
                                                 }
                                             }}
-                                            placeholder="Cari judul dokumen..."
+                                            placeholder="Cari..."
                                             className="w-full pl-12 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
                                         />
                                     </div>
@@ -414,22 +411,25 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                     >
                                         <FiSearch className="text-lg" />
                                     </button>
-                                    {(statusFilter || (selectedArea && selectedArea !== "all") || (selectedCategory && selectedCategory !== "all") || searchQuery) && (
-                                        <button
-                                            onClick={handleResetFilter}
-                                            className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-300 text-sm whitespace-nowrap"
-                                            title="Reset Filter"
-                                        >
-                                            Reset
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         </div>
+                        {/* Reset Button Container */}
+                        {(statusFilter || (selectedArea && selectedArea !== "all") || (selectedCategory && selectedCategory !== "all") || searchQuery) && (
+                            <div className="mt-4 flex justify-end">
+                                <button
+                                    onClick={handleResetFilter}
+                                    className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-300 text-sm"
+                                    title="Reset Filter"
+                                >
+                                    Reset Filters
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Pagination */}
-                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b-2 border-blue-100 mb-6 rounded-xl">
+                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b-2 border-blue-100">
                         <div className="flex flex-col md:flex-row items-center justify-end gap-4">
                             {/* Per Page Selector */}
                             <div className="flex items-center gap-3">
@@ -439,7 +439,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                 <select
                                     value={perPage}
                                     onChange={(e) => handlePerPageChange(Number(e.target.value))}
-                                    className="px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                    className="px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
                                 >
                                     <option value={5}>5</option>
                                     <option value={10}>10</option>
@@ -471,7 +471,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                     });
                                                 }}
                                                 disabled={documents.current_page === 1}
-                                                className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700"
+                                                className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700 min-h-[44px]"
                                             >
                                                 Previous
                                             </button>
@@ -492,7 +492,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                     });
                                                 }}
                                                 disabled={documents.current_page === documents.last_page}
-                                                className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700"
+                                                className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700 min-h-[44px]"
                                             >
                                                 Next
                                             </button>
@@ -507,8 +507,77 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto rounded-xl border border-gray-200">
+                    {/* Mobile Card View */}
+                    <div className="md:hidden">
+                        {documents?.data && documents.data.length > 0 ? (
+                            <div className="divide-y divide-gray-100">
+                                {documents.data.map((doc) => (
+                                    <div key={doc.id} className="p-4 space-y-3 bg-white hover:bg-gray-50 transition-colors">
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className="space-y-1">
+                                                <h3 className="font-bold text-gray-800 text-sm line-clamp-2 leading-relaxed">
+                                                    {doc.judul}
+                                                </h3>
+                                                <span className="inline-block text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                    {doc.category?.nama}
+                                                </span>
+                                            </div>
+                                            <span
+                                                className={`shrink-0 inline-flex items-center px-2 py-1 rounded-lg text-[10px] uppercase font-bold border ${getStatusBadgeClass(
+                                                    doc.status
+                                                )}`}
+                                            >
+                                                {doc.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                            <div className="bg-gray-50 p-2 rounded-lg">
+                                                <p className="font-semibold text-gray-400 mb-0.5">Priode</p>
+                                                <p>{formatDate(doc.periode_mulai)}</p>
+                                                <p>{formatDate(doc.periode_selesai)}</p>
+                                            </div>
+                                            <div className="bg-gray-50 p-2 rounded-lg">
+                                                <p className="font-semibold text-gray-400 mb-0.5">Area</p>
+                                                <p className="line-clamp-1">{doc.area?.nama}</p>
+                                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                                    <p className="font-semibold text-gray-400 mb-0.5">Pengunggah</p>
+                                                    <p className="line-clamp-2 text-blue-700 font-medium">{doc.user?.nama || "-"}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-end gap-2 pt-2">
+                                            <button
+                                                onClick={() => openReviewModal(doc)}
+                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors text-sm min-h-[44px]"
+                                            >
+                                                <FiEdit /> Review
+                                            </button>
+                                            <a
+                                                href={getDownloadUrl(doc.id)}
+                                                onClick={notifyDownload}
+                                                className="flex-none flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 text-yellow-700 font-semibold rounded-lg hover:bg-yellow-100 active:bg-yellow-200 transition-colors text-sm min-h-[44px] min-w-[44px]"
+                                                title="Download"
+                                            >
+                                                <FiDownload />
+                                            </a>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-8 text-center text-gray-500">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FiFile className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <p className="font-semibold">No Documents Found</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Table (Desktop) */}
+                    <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-200">
                         <table className="w-full">
                             <thead className="bg-gradient-to-r from-blue-900 to-blue-800 text-white">
                                 <tr>
@@ -612,53 +681,54 @@ export default function Review({ auth, documents, areas, categories, statuses, f
 
             {/* Review Modal */}
             {showReviewModal && selectedDocument && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95%] md:max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all scale-100">
                         {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white px-8 py-6 rounded-t-2xl">
-                            <div className="flex items-center gap-3">
-                                <FiEdit className="text-3xl" />
-                                <h2 className="text-2xl font-bold">REVIEW</h2>
+                        <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white px-6 py-4 md:px-8 md:py-6 rounded-t-2xl sticky top-0 z-10">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <FiEdit className="text-2xl md:text-3xl" />
+                                    <h2 className="text-xl md:text-2xl font-bold">REVIEW</h2>
+                                </div>
+                                <button
+                                    onClick={closeReviewModal}
+                                    className="text-white/80 hover:text-white transition-colors"
+                                >
+                                    <span className="text-2xl">&times;</span>
+                                </button>
                             </div>
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-8">
+                        <div className="p-4 md:p-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Document Preview */}
-                                <div className="bg-gray-50 rounded-xl p-2.5 border-2 border-gray-200 flex flex-col">
+                                <div className="bg-gray-50 rounded-xl p-2.5 border-2 border-gray-200 flex flex-col h-full">
                                     <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                         <FiFile className="text-blue-900" /> Preview Dokumen
                                     </h4>
                                     {getPreviewUrl(selectedDocument) ? (
-                                        <div className="w-full flex-1 min-h-[400px] border rounded-lg overflow-hidden bg-white">
+                                        <div className="w-full flex-1 min-h-[300px] md:min-h-[400px] border rounded-lg overflow-hidden bg-white relative">
                                             <iframe
                                                 title="Document Preview"
                                                 src={`${getPreviewUrl(selectedDocument)}#toolbar=0&navpanes=0`}
-                                                className="w-full h-full"
-                                                style={{
-                                                    display: 'block',
-                                                    border: 'none',
-                                                    margin: 0,
-                                                    padding: 0
-                                                }}
-                                                scrolling="yes"
-                                                frameBorder="0"
+                                                className="absolute inset-0 w-full h-full"
+                                                style={{ border: 'none' }}
                                             ></iframe>
                                         </div>
                                     ) : (
-                                        <div className="w-full flex-1 min-h-[400px] flex flex-col items-center justify-center text-center text-gray-500 bg-white rounded-lg border border-dashed">
+                                        <div className="w-full flex-1 min-h-[300px] md:min-h-[400px] flex flex-col items-center justify-center text-center text-gray-500 bg-white rounded-lg border border-dashed">
                                             <FiFile className="text-4xl mb-2" />
                                             <p className="text-sm">Belum ada dokumen untuk dipreview</p>
                                         </div>
                                     )}
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className="text-xs text-gray-500 mt-2 truncate">
                                         File: {selectedDocument.file_name || "-"}
                                     </p>
                                 </div>
 
                                 {/* Notes and Label */}
-                                <div className="space-y-6">
+                                <div className="space-y-6 flex flex-col">
                                     {/* Notes Section */}
                                     <div>
                                         <label className="block text-lg font-bold text-gray-800 mb-3">
@@ -694,53 +764,53 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                             </select>
                                         )}
                                     </div>
+
+                                    {/* Previous Feedbacks */}
+                                    {selectedDocument.feedbacks && selectedDocument.feedbacks.length > 0 && (
+                                        <div className="mt-6 border-t-2 border-gray-200 pt-6 flex-1 overflow-hidden flex flex-col">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                                                Previous Feedback History
+                                            </h3>
+                                            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                                {selectedDocument.feedbacks.map((feedback, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <span className="font-semibold text-sm text-gray-700">
+                                                                {feedback.user?.nama || "Unknown"}
+                                                            </span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {new Date(feedback.created_at).toLocaleDateString(
+                                                                    "id-ID"
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600">
+                                                            {feedback.message}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-
-                            {/* Previous Feedbacks */}
-                            {selectedDocument.feedbacks && selectedDocument.feedbacks.length > 0 && (
-                                <div className="mt-6 border-t-2 border-gray-200 pt-6">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4">
-                                        Previous Feedback History
-                                    </h3>
-                                    <div className="space-y-3 max-h-40 overflow-y-auto">
-                                        {selectedDocument.feedbacks.map((feedback, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                                            >
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className="font-semibold text-sm text-gray-700">
-                                                        {feedback.user?.nama || "Unknown"}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {new Date(feedback.created_at).toLocaleDateString(
-                                                            "id-ID"
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-gray-600">
-                                                    {feedback.message}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="px-8 pb-8 flex gap-4 justify-end">
+                        <div className="px-6 py-4 md:px-8 md:pb-8 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end border-t border-gray-100 bg-gray-50 rounded-b-2xl">
                             <button
                                 onClick={closeReviewModal}
-                                className="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all"
+                                className="w-full sm:w-auto px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all text-center"
                             >
                                 Cancel
                             </button>
                             {!isReadOnly && (
                                 <button
                                     onClick={handleSaveReview}
-                                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg text-center"
                                 >
                                     Save
                                 </button>

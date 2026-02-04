@@ -112,27 +112,27 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
     const handleSubmit = (status) => {
         // Validasi frontend sebelum submit
         const validationErrors = [];
-        
+
         if (!data.judul || data.judul.trim() === "") {
             validationErrors.push("Judul harus diisi");
         }
-        
+
         if (!data.periode_mulai) {
             validationErrors.push("Periode mulai harus diisi");
         }
-        
+
         if (!data.periode_selesai) {
             validationErrors.push("Periode selesai harus diisi");
         }
-        
+
         if (!data.area_id) {
             validationErrors.push("Area harus dipilih");
         }
-        
+
         if (!data.category_id) {
             validationErrors.push("Kategori merchant harus dipilih");
         }
-        
+
         // Jika ada error validasi, tampilkan error dan jangan submit
         if (validationErrors.length > 0) {
             toast.error("Form Tidak Lengkap", {
@@ -141,7 +141,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
             });
             return; // Jangan submit, modal tetap terbuka
         }
-        
+
         // Validasi tanggal: periode selesai harus setelah atau sama dengan periode mulai
         if (new Date(data.periode_selesai) < new Date(data.periode_mulai)) {
             toast.error("Periode Tidak Valid", {
@@ -172,11 +172,10 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
             only: ['documents', 'filters', 'flash'],
             onSuccess: () => {
                 toast.success("Update Berhasil", {
-                    description: `Dokumen berhasil ${
-                        status === "Draft"
-                            ? "disimpan sebagai draft"
-                            : "diupdate"
-                    }.`,
+                    description: `Dokumen berhasil ${status === "Draft"
+                        ? "disimpan sebagai draft"
+                        : "diupdate"
+                        }.`,
                     duration: 4000,
                 });
                 onClose();
@@ -220,10 +219,10 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                 ></div>
 
                 {/* Modal */}
-                <div className="inline-block w-full max-w-5xl my-2 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl">
+                <div className="inline-block w-full max-w-[95%] md:max-w-5xl my-2 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-4 flex items-center justify-between">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-4 md:px-6 py-4 flex items-center justify-between">
+                        <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                             <FiFile className="text-yellow-400" />
                             {canEdit ? "EDIT DOCUMENT" : "VIEW DOCUMENT"}
                         </h3>
@@ -237,8 +236,8 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
 
                     {/* Body */}
                     <form onSubmit={(e) => e.preventDefault()}>
-                        <div className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 md:p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 {/* Left Column - Preview */}
                                 <div className="bg-gray-50 rounded-xl p-2.5 border-2 border-gray-200 flex flex-col">
                                     <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
@@ -258,13 +257,13 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                             <p className="text-sm">Belum ada dokumen untuk dipreview</p>
                                         </div>
                                     )}
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className="text-xs text-gray-500 mt-2 truncate">
                                         Current File: {uploadedFile?.name || document?.file_name || "-"}
                                     </p>
                                 </div>
 
                                 {/* Right Column - Form */}
-                                <div className="space-y-2.5">
+                                <div className="space-y-4">
                                     {/* Notes (read-only) */}
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -273,7 +272,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                         <textarea
                                             value={data.notes}
                                             readOnly
-                                            rows="4"
+                                            rows="3"
                                             className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-700 resize-none"
                                         />
                                     </div>
@@ -288,9 +287,8 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                             value={data.judul}
                                             onChange={(e) => setData("judul", e.target.value)}
                                             readOnly={!canEdit}
-                                            className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                                                !canEdit ? "bg-gray-100 cursor-not-allowed" : ""
-                                            }`}
+                                            className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : ""
+                                                }`}
                                         />
                                         {errors.judul && (
                                             <p className="text-red-500 text-sm mt-1">{errors.judul}</p>
@@ -302,7 +300,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                         <label className="block text-sm font-bold text-gray-700 mb-2">
                                             Periode <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex flex-col sm:flex-row items-center gap-3">
                                             <input
                                                 type="date"
                                                 value={data.periode_mulai}
@@ -310,12 +308,14 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                     setData("periode_mulai", e.target.value)
                                                 }
                                                 readOnly={!canEdit}
-                                                className={`flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : ""
-                                                }`}
+                                                className={`w-full sm:flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 min-h-[48px] ${!canEdit ? "bg-gray-100 cursor-not-allowed" : ""
+                                                    }`}
                                             />
-                                            <span className="text-gray-500 font-medium">
+                                            <span className="text-gray-500 font-medium hidden sm:block">
                                                 -
+                                            </span>
+                                            <span className="text-gray-500 font-medium sm:hidden">
+                                                s/d
                                             </span>
                                             <input
                                                 type="date"
@@ -325,15 +325,14 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                     setData("periode_selesai", e.target.value)
                                                 }
                                                 readOnly={!canEdit}
-                                                className={`flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : ""
-                                                }`}
+                                                className={`w-full sm:flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 min-h-[48px] ${!canEdit ? "bg-gray-100 cursor-not-allowed" : ""
+                                                    }`}
                                             />
                                         </div>
                                     </div>
 
                                     {/* Kategori & Area */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-bold text-gray-700 mb-2">
                                                 Kategori Merchant <span className="text-red-500">*</span>
@@ -342,9 +341,8 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                 value={data.category_id}
                                                 onChange={(e) => setData("category_id", e.target.value)}
                                                 disabled={!canEdit}
-                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
-                                                }`}
+                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+                                                    }`}
                                             >
                                                 {categories.map((category) => (
                                                     <option key={category.id} value={category.id}>
@@ -362,9 +360,8 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                 value={data.area_id}
                                                 onChange={(e) => setData("area_id", e.target.value)}
                                                 disabled={!canEdit}
-                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
-                                                }`}
+                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+                                                    }`}
                                             >
                                                 {areas.map((area) => (
                                                     <option key={area.id} value={area.id}>
@@ -380,12 +377,12 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                         <label className="block text-sm font-bold text-gray-700 mb-2">
                                             Upload Dokumen <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col sm:flex-row items-center gap-2">
                                             <input
                                                 type="text"
                                                 value={uploadedFile?.name || document?.file_name}
                                                 readOnly
-                                                className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50"
+                                                className="w-full sm:flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50"
                                             />
                                             <input
                                                 ref={fileInputRef}
@@ -398,9 +395,8 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                 type="button"
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={!canEdit}
-                                                className={`px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 ${
-                                                    !canEdit ? "opacity-50 cursor-not-allowed" : ""
-                                                }`}
+                                                className={`w-full sm:w-auto px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 ${!canEdit ? "opacity-50 cursor-not-allowed" : ""
+                                                    }`}
                                             >
                                                 Choose File
                                             </button>
@@ -415,12 +411,12 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
 
                         {/* Footer */}
                         {canEdit && (
-                            <div className="bg-gray-50 px-5 py-3 flex justify-end gap-3 border-t-2 border-gray-200">
+                            <div className="bg-gray-50 px-4 md:px-5 py-3 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t-2 border-gray-200">
                                 <button
                                     type="button"
                                     onClick={() => handleSubmit("Draft")}
                                     disabled={processing}
-                                    className="px-8 py-2.5 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    className="w-full sm:w-auto px-8 py-2.5 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-center"
                                 >
                                     {processing ? "Saving..." : "Save as Draft"}
                                 </button>
@@ -428,7 +424,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                     type="button"
                                     onClick={() => handleSubmit("On Process")}
                                     disabled={processing}
-                                    className="px-8 py-2.5 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white font-bold rounded-xl hover:from-blue-800 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
+                                    className="w-full sm:w-auto px-8 py-2.5 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white font-bold rounded-xl hover:from-blue-800 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group text-center"
                                 >
                                     <span className="relative z-10">
                                         {processing ? "Updating..." : "Save & Submit"}

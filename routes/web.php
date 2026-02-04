@@ -42,9 +42,9 @@ Route::get('/', function () {
         } elseif ($user->role === 'AMO Region') {
             return redirect()->route('amo-region.home');
         } elseif ($user->role === 'MO') {
-            return redirect()->route('mo.home');
+            return redirect()->route('mo.review');
         } elseif ($user->role === 'CCH') {
-            return redirect()->route('cch.home');
+            return redirect()->route('cch.review');
         } 
     }
     return redirect()->route('login');

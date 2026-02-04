@@ -114,13 +114,13 @@ export default function Upload() {
         formData.append("category_id", data.category_id);
         formData.append("status", status); // Status langsung dari parameter
         formData.append("file", data.file);
-        
+
         console.log("Submitting with status:", status);
         console.log("FormData entries:");
         for (let pair of formData.entries()) {
             console.log(pair[0] + ': ' + pair[1]);
         }
-        
+
         // Gunakan router.post langsung dengan FormData
         router.post("/amo-area/upload-document", formData, {
             preserveScroll: true,
@@ -132,11 +132,10 @@ export default function Upload() {
                     fileInputRef.current.value = "";
                 }
                 toast.success("Upload Berhasil", {
-                    description: `Dokumen berhasil ${
-                        status === "Draft"
-                            ? "disimpan sebagai draft"
-                            : "diupload"
-                    }.`,
+                    description: `Dokumen berhasil ${status === "Draft"
+                        ? "disimpan sebagai draft"
+                        : "diupload"
+                        }.`,
                     duration: 4000,
                 });
             },
@@ -172,14 +171,7 @@ export default function Upload() {
             />
 
             <div className="min-h-full">
-                {flash?.success && (
-                    <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md flex items-center animate-fade-in">
-                        <FiCheck className="text-green-600 text-xl mr-3 flex-shrink-0" />
-                        <p className="text-green-800 font-medium">
-                            {flash.success}
-                        </p>
-                    </div>
-                )}
+
 
                 <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-2xl p-5 mb-5 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400 opacity-10 rounded-full -mr-32 -mt-32"></div>
@@ -195,7 +187,7 @@ export default function Upload() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+                <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 border border-gray-100">
                     <div className="space-y-6">
                         {/* Judul Field */}
                         <div>
@@ -225,7 +217,7 @@ export default function Upload() {
                                     Periode{" "}
                                     <span className="text-red-500">*</span>
                                 </label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-col sm:flex-row items-center gap-3">
                                     <input
                                         type="date"
                                         value={data.periode_mulai}
@@ -235,10 +227,13 @@ export default function Upload() {
                                                 e.target.value
                                             )
                                         }
-                                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                                        className="w-full sm:flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 min-h-[48px]"
                                     />
-                                    <span className="text-gray-500 font-medium">
+                                    <span className="text-gray-500 font-medium hidden sm:block">
                                         -
+                                    </span>
+                                    <span className="text-gray-500 font-medium sm:hidden">
+                                        s/d
                                     </span>
                                     <input
                                         type="date"
@@ -250,16 +245,16 @@ export default function Upload() {
                                                 e.target.value
                                             )
                                         }
-                                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                                        className="w-full sm:flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 min-h-[48px]"
                                     />
                                 </div>
                                 {(errors.periode_mulai ||
                                     errors.periode_selesai) && (
-                                    <p className="text-red-500 text-sm mt-1">
-                                        {errors.periode_mulai ||
-                                            errors.periode_selesai}
-                                    </p>
-                                )}
+                                        <p className="text-red-500 text-sm mt-1">
+                                            {errors.periode_mulai ||
+                                                errors.periode_selesai}
+                                        </p>
+                                    )}
                             </div>
 
                             <div>
@@ -325,11 +320,10 @@ export default function Upload() {
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
-                                    className={`border-3 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
-                                        isDragging
-                                            ? "border-blue-900 bg-blue-50 scale-105"
-                                            : "border-gray-300 bg-gray-50 hover:border-blue-700 hover:bg-blue-50"
-                                    }`}
+                                    className={`border-3 border-dashed rounded-2xl p-6 md:p-12 text-center transition-all duration-300 ${isDragging
+                                        ? "border-blue-900 bg-blue-50 scale-105"
+                                        : "border-gray-300 bg-gray-50 hover:border-blue-700 hover:bg-blue-50"
+                                        }`}
                                 >
                                     <FiUploadCloud className="mx-auto text-6xl text-gray-400 mb-4" />
                                     <p className="text-gray-700 font-semibold text-lg mb-2">
@@ -394,12 +388,12 @@ export default function Upload() {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex justify-end gap-4 pt-6 border-t-2 border-gray-100">
+                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t-2 border-gray-100">
                             <button
                                 type="button"
                                 onClick={() => handleSubmit("Draft")}
                                 disabled={processing}
-                                className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none min-h-[48px]"
                             >
                                 {processing ? "Saving..." : "Save as Draft"}
                             </button>
@@ -407,7 +401,7 @@ export default function Upload() {
                                 type="button"
                                 onClick={() => handleSubmit("On Process")}
                                 disabled={processing}
-                                className="px-8 py-3 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white font-bold rounded-xl hover:from-blue-800 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
+                                className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white font-bold rounded-xl hover:from-blue-800 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group min-h-[48px]"
                             >
                                 <span className="relative z-10">
                                     {processing
