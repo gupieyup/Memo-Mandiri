@@ -186,27 +186,13 @@ export default function UploadSign() {
         e.stopPropagation();
         setIsDraggingSignature(true);
 
+        // Get coordinates relative to the PDF Page container (not the window)
+        // We use the parent element of the signature (which should be the same size as the PDF page)
         const container = e.currentTarget.parentElement.parentElement;
         const rect = container.getBoundingClientRect();
 
         const x = e.clientX - rect.left - signaturePosition.x;
         const y = e.clientY - rect.top - signaturePosition.y;
-        setDragOffset({ x, y });
-    };
-
-    const handleSignatureTouchStart = (e) => {
-        if (!uploadedSignature) return;
-
-        // Don't preventDefault here to allow scrolling if needed,
-        // but we'll prevent it in touchmove if dragging
-        const touch = e.touches[0];
-        setIsDraggingSignature(true);
-
-        const container = e.currentTarget.parentElement.parentElement;
-        const rect = container.getBoundingClientRect();
-
-        const x = touch.clientX - rect.left - signaturePosition.x;
-        const y = touch.clientY - rect.top - signaturePosition.y;
         setDragOffset({ x, y });
     };
 
@@ -227,27 +213,10 @@ export default function UploadSign() {
         });
     };
 
-    const handleResizeTouchStart = (e) => {
-        if (!uploadedSignature) return;
-
-        e.stopPropagation();
-        const touch = e.touches[0];
-        setIsResizingSignature(true);
-
-        setResizeStart({
-            x: touch.clientX,
-            y: touch.clientY,
-            width: signatureSize.width,
-            height: signatureSize.height,
-            startX: signaturePosition.x,
-            startY: signaturePosition.y,
-        });
-    };
-
     useEffect(() => {
         let animationFrameId = null;
 
-        const handleMove = (clientX, clientY) => {
+        const handleMouseMove = (e) => {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
@@ -255,7 +224,7 @@ export default function UploadSign() {
             animationFrameId = requestAnimationFrame(() => {
                 if (isResizingSignature && pdfWrapperRef.current) {
                     const rect = pdfWrapperRef.current.getBoundingClientRect();
-                    const deltaX = clientX - resizeStart.x;
+                    const deltaX = e.clientX - resizeStart.x;
                     const aspectRatio = resizeStart.width / resizeStart.height;
 
                     const maxWidth = Math.min(500, rect.width - resizeStart.startX);
@@ -276,8 +245,8 @@ export default function UploadSign() {
                 } else if (isDraggingSignature && pdfWrapperRef.current) {
                     const rect = pdfWrapperRef.current.getBoundingClientRect();
 
-                    let x = clientX - rect.left - dragOffset.x;
-                    let y = clientY - rect.top - dragOffset.y;
+                    let x = e.clientX - rect.left - dragOffset.x;
+                    let y = e.clientY - rect.top - dragOffset.y;
 
                     const maxX = rect.width - signatureSize.width;
                     const maxY = rect.height - signatureSize.height;
@@ -290,15 +259,7 @@ export default function UploadSign() {
             });
         };
 
-        const handleMouseMove = (e) => handleMove(e.clientX, e.clientY);
-        const handleTouchMove = (e) => {
-            if (isDraggingSignature || isResizingSignature) {
-                if (e.cancelable) e.preventDefault();
-                handleMove(e.touches[0].clientX, e.touches[0].clientY);
-            }
-        };
-
-        const handleEnd = () => {
+        const handleMouseUp = () => {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
@@ -317,12 +278,8 @@ export default function UploadSign() {
 
         if (isDraggingSignature || isResizingSignature) {
             document.addEventListener("mousemove", handleMouseMove, { passive: true });
-            document.addEventListener("mouseup", handleEnd);
-            document.addEventListener("touchmove", handleTouchMove, { passive: false });
-            document.addEventListener("touchend", handleEnd);
-            document.addEventListener("touchcancel", handleEnd);
+            document.addEventListener("mouseup", handleMouseUp);
             document.body.style.userSelect = 'none';
-            document.body.style.overflow = 'hidden'; // Prevents scrolling while interacting
             document.body.style.cursor = isDraggingSignature ? 'grabbing' : 'se-resize';
         }
 
@@ -331,12 +288,8 @@ export default function UploadSign() {
                 cancelAnimationFrame(animationFrameId);
             }
             document.removeEventListener("mousemove", handleMouseMove);
-            document.removeEventListener("mouseup", handleEnd);
-            document.removeEventListener("touchmove", handleTouchMove);
-            document.removeEventListener("touchend", handleEnd);
-            document.removeEventListener("touchcancel", handleEnd);
+            document.removeEventListener("mouseup", handleMouseUp);
             document.body.style.userSelect = '';
-            document.body.style.overflow = '';
             document.body.style.cursor = '';
         };
     }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, setData]);
@@ -436,7 +389,7 @@ export default function UploadSign() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 border border-gray-100">
+                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="space-y-6">
                             <div>
@@ -501,7 +454,7 @@ export default function UploadSign() {
 
                             <div
                                 ref={documentPreviewRef}
-                                className="border-2 border-gray-200 rounded-xl bg-gray-50 flex items-center justify-center min-h-[400px] md:min-h-[600px] relative overflow-hidden"
+                                className="border-2 border-gray-200 rounded-xl bg-gray-50 flex items-center justify-center min-h-[600px] relative overflow-hidden"
                             >
                                 {previewUrl ? (
                                     <Document
@@ -543,16 +496,14 @@ export default function UploadSign() {
                                                         alt="Signature"
                                                         className="w-full h-full object-contain select-none"
                                                         onMouseDown={handleSignatureMouseDown}
-                                                        onTouchStart={handleSignatureTouchStart}
                                                         draggable={false}
                                                         style={{
                                                             pointerEvents: isResizingSignature ? 'none' : 'auto',
                                                         }}
                                                     />
                                                     <div
-                                                        className="absolute bottom-0 right-0 w-8 h-8 md:w-6 md:h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
+                                                        className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
                                                         onMouseDown={handleResizeMouseDown}
-                                                        onTouchStart={handleResizeTouchStart}
                                                         title="Resize signature"
                                                     >
                                                         <FiMaximize2 className="text-white text-xs transform rotate-45" />
@@ -587,12 +538,12 @@ export default function UploadSign() {
                                         onDragOver={handleDragOver}
                                         onDragLeave={handleDragLeave}
                                         onDrop={handleDrop}
-                                        className={`border-3 border-dashed rounded-2xl p-8 md:p-12 text-center transition-all duration-300 ${isDragging
+                                        className={`border-3 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${isDragging
                                             ? "border-blue-900 bg-blue-50 scale-105"
                                             : "border-gray-300 bg-gray-50 hover:border-blue-700 hover:bg-blue-50"
                                             }`}
                                     >
-                                        <FiUploadCloud className="mx-auto text-5xl md:text-6xl text-gray-400 mb-4" />
+                                        <FiUploadCloud className="mx-auto text-6xl text-gray-400 mb-4" />
                                         <p className="text-gray-700 font-semibold text-lg mb-2">
                                             Select a file or drag and drop here
                                         </p>
@@ -615,14 +566,14 @@ export default function UploadSign() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="border-2 border-blue-200 bg-blue-50 rounded-2xl p-4 md:p-6">
+                                    <div className="border-2 border-blue-200 bg-blue-50 rounded-2xl p-6">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-4">
-                                                <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                    <FiFile className="text-white text-xl md:text-2xl" />
+                                                <div className="w-14 h-14 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                                                    <FiFile className="text-white text-2xl" />
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-bold text-gray-800 truncate max-w-[150px] md:max-w-xs">
+                                                <div>
+                                                    <p className="font-bold text-gray-800">
                                                         {uploadedSignature.name}
                                                     </p>
                                                     <p className="text-sm text-gray-600">
@@ -633,7 +584,7 @@ export default function UploadSign() {
                                             <button
                                                 type="button"
                                                 onClick={removeSignature}
-                                                className="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-all duration-200 group flex-shrink-0"
+                                                className="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-all duration-200 group"
                                             >
                                                 <FiX className="text-red-600 text-xl group-hover:scale-110 transition-transform" />
                                             </button>
@@ -647,14 +598,14 @@ export default function UploadSign() {
                                 )}
                             </div>
                         </div>
-                    </div>
+     \               </div>
 
-                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 mt-6 border-t-2 border-gray-100">
+                    <div className="flex justify-end gap-4 pt-6 mt-6 border-t-2 border-gray-100">
                         <button
                             type="button"
                             onClick={handleCancel}
                             disabled={processing}
-                            className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-center"
+                            className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
                             Cancel
                         </button>
@@ -662,7 +613,7 @@ export default function UploadSign() {
                             type="button"
                             onClick={handleSubmit}
                             disabled={processing || !selectedDocument || !uploadedSignature}
-                            className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white font-bold rounded-xl hover:from-blue-800 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group text-center"
+                            className="px-8 py-3 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white font-bold rounded-xl hover:from-blue-800 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
                         >
                             <span className="relative z-10">
                                 {processing ? "Saving..." : "Save"}

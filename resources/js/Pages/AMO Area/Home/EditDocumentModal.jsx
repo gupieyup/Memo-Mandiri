@@ -112,27 +112,27 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
     const handleSubmit = (status) => {
         // Validasi frontend sebelum submit
         const validationErrors = [];
-
+        
         if (!data.judul || data.judul.trim() === "") {
             validationErrors.push("Judul harus diisi");
         }
-
+        
         if (!data.periode_mulai) {
             validationErrors.push("Periode mulai harus diisi");
         }
-
+        
         if (!data.periode_selesai) {
             validationErrors.push("Periode selesai harus diisi");
         }
-
+        
         if (!data.area_id) {
             validationErrors.push("Area harus dipilih");
         }
-
+        
         if (!data.category_id) {
             validationErrors.push("Kategori merchant harus dipilih");
         }
-
+        
         // Jika ada error validasi, tampilkan error dan jangan submit
         if (validationErrors.length > 0) {
             toast.error("Form Tidak Lengkap", {
@@ -141,7 +141,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
             });
             return; // Jangan submit, modal tetap terbuka
         }
-
+        
         // Validasi tanggal: periode selesai harus setelah atau sama dengan periode mulai
         if (new Date(data.periode_selesai) < new Date(data.periode_mulai)) {
             toast.error("Periode Tidak Valid", {
@@ -172,10 +172,11 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
             only: ['documents', 'filters', 'flash'],
             onSuccess: () => {
                 toast.success("Update Berhasil", {
-                    description: `Dokumen berhasil ${status === "Draft"
-                        ? "disimpan sebagai draft"
-                        : "diupdate"
-                        }.`,
+                    description: `Dokumen berhasil ${
+                        status === "Draft"
+                            ? "disimpan sebagai draft"
+                            : "diupdate"
+                    }.`,
                     duration: 4000,
                 });
                 onClose();
@@ -287,8 +288,9 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                             value={data.judul}
                                             onChange={(e) => setData("judul", e.target.value)}
                                             readOnly={!canEdit}
-                                            className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : ""
-                                                }`}
+                                            className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
+                                                !canEdit ? "bg-gray-100 cursor-not-allowed" : ""
+                                            }`}
                                         />
                                         {errors.judul && (
                                             <p className="text-red-500 text-sm mt-1">{errors.judul}</p>
@@ -300,7 +302,7 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                         <label className="block text-sm font-bold text-gray-700 mb-2">
                                             Periode <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="flex flex-col sm:flex-row items-center gap-3">
+                                        <div className="flex items-center gap-3">
                                             <input
                                                 type="date"
                                                 value={data.periode_mulai}
@@ -308,14 +310,12 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                     setData("periode_mulai", e.target.value)
                                                 }
                                                 readOnly={!canEdit}
-                                                className={`w-full sm:flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : ""
-                                                    }`}
+                                                className={`flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
+                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : ""
+                                                }`}
                                             />
-                                            <span className="text-gray-500 font-medium hidden sm:block">
+                                            <span className="text-gray-500 font-medium">
                                                 -
-                                            </span>
-                                            <span className="text-gray-500 font-medium sm:hidden">
-                                                s/d
                                             </span>
                                             <input
                                                 type="date"
@@ -325,14 +325,15 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                     setData("periode_selesai", e.target.value)
                                                 }
                                                 readOnly={!canEdit}
-                                                className={`w-full sm:flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : ""
-                                                    }`}
+                                                className={`flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
+                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : ""
+                                                }`}
                                             />
                                         </div>
                                     </div>
 
                                     {/* Kategori & Area */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-bold text-gray-700 mb-2">
                                                 Kategori Merchant <span className="text-red-500">*</span>
@@ -341,8 +342,9 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                 value={data.category_id}
                                                 onChange={(e) => setData("category_id", e.target.value)}
                                                 disabled={!canEdit}
-                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${!canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
-                                                    }`}
+                                                className={`w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
+                                                    !canEdit ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+                                                }`}
                                             >
                                                 {categories.map((category) => (
                                                     <option key={category.id} value={category.id}>
@@ -393,8 +395,9 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                                 type="button"
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={!canEdit}
-                                                className={`px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 ${!canEdit ? "opacity-50 cursor-not-allowed" : ""
-                                                    }`}
+                                                className={`px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 ${
+                                                    !canEdit ? "opacity-50 cursor-not-allowed" : ""
+                                                }`}
                                             >
                                                 Choose File
                                             </button>

@@ -36,21 +36,21 @@ export default function Home() {
 
     const handleFilterChange = () => {
         const params = {};
-
+        
         if (statusFilter) {
             params.status = statusFilter;
         }
-
+        
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-
+        
         if (searchQuery) {
             params.search = searchQuery;
         }
-
+        
         params.per_page = perPage;
-
+        
         router.get("/amo-area/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -60,19 +60,19 @@ export default function Home() {
     const handleStatusChange = (value) => {
         setStatusFilter(value);
         const params = {};
-
+        
         params.status = value;
-
+        
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-
+        
         if (searchQuery) {
             params.search = searchQuery;
         }
-
+        
         params.per_page = perPage;
-
+        
         router.get("/amo-area/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -82,19 +82,19 @@ export default function Home() {
     const handleCategoryChange = (value) => {
         setCategoryFilter(value);
         const params = {};
-
+        
         if (statusFilter) {
             params.status = statusFilter;
         }
-
+        
         params.category = value;
-
+        
         if (searchQuery) {
             params.search = searchQuery;
         }
-
+        
         params.per_page = perPage;
-
+        
         router.get("/amo-area/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -103,21 +103,21 @@ export default function Home() {
 
     const handleSearch = () => {
         const params = {};
-
+        
         if (statusFilter) {
             params.status = statusFilter;
         }
-
+        
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-
+        
         if (searchQuery) {
             params.search = searchQuery;
         }
-
+        
         params.per_page = perPage;
-
+        
         router.get("/amo-area/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -127,21 +127,21 @@ export default function Home() {
     const handlePerPageChange = (newPerPage) => {
         setPerPage(newPerPage);
         const params = {};
-
+        
         if (statusFilter) {
             params.status = statusFilter;
         }
-
+        
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-
+        
         if (searchQuery) {
             params.search = searchQuery;
         }
-
+        
         params.per_page = newPerPage;
-
+        
         router.get("/amo-area/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -245,7 +245,7 @@ export default function Home() {
                 <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
                     {/* Header with Filters */}
                     <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b-2 border-blue-100">
-                        {/* Filters */}
+                         {/* Filters */}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                             <div className="md:col-span-3">
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -341,7 +341,7 @@ export default function Home() {
                                 <select
                                     value={perPage}
                                     onChange={(e) => handlePerPageChange(Number(e.target.value))}
-                                    className="px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
+                                    className="px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
                                 >
                                     <option value={5}>5</option>
                                     <option value={10}>10</option>
@@ -372,7 +372,7 @@ export default function Home() {
                                                     });
                                                 }}
                                                 disabled={documents.current_page === 1}
-                                                className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700 min-h-[44px]"
+                                                className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700"
                                             >
                                                 Previous
                                             </button>
@@ -392,7 +392,7 @@ export default function Home() {
                                                     });
                                                 }}
                                                 disabled={documents.current_page === documents.last_page}
-                                                className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700 min-h-[44px]"
+                                                className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-gray-700"
                                             >
                                                 Next
                                             </button>
@@ -407,94 +407,8 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* Mobile Card View */}
-                    <div className="md:hidden">
-                        {documents?.data && documents.data.length > 0 ? (
-                            <div className="divide-y divide-gray-100">
-                                {documents.data.map((doc) => (
-                                    <div key={doc.id} className="p-4 space-y-3 bg-white hover:bg-gray-50 transition-colors">
-                                        <div className="flex justify-between items-start gap-3">
-                                            <div className="space-y-1">
-                                                <h3 className="font-bold text-gray-800 text-sm line-clamp-2 leading-relaxed">
-                                                    {doc.judul}
-                                                </h3>
-                                                <span className="inline-block text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                                                    {doc.category.nama}
-                                                </span>
-                                            </div>
-                                            <span
-                                                className={`shrink-0 inline-flex items-center px-2 py-1 rounded-lg text-[10px] uppercase font-bold border ${getStatusColor(
-                                                    doc.status
-                                                )}`}
-                                            >
-                                                {doc.status}
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                                            <div className="bg-gray-50 p-2 rounded-lg">
-                                                <p className="font-semibold text-gray-400 mb-0.5">Priode</p>
-                                                <p>{formatDate(doc.periode_mulai)}</p>
-                                                <p>{formatDate(doc.periode_selesai)}</p>
-                                            </div>
-                                            <div className="bg-gray-50 p-2 rounded-lg">
-                                                <p className="font-semibold text-gray-400 mb-0.5">Area</p>
-                                                <p className="line-clamp-2">{doc.area.nama}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-end gap-2 pt-2">
-                                            {canEditDocument(doc.status) ? (
-                                                <button
-                                                    onClick={() => handleEdit(doc)}
-                                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors text-sm min-h-[44px]"
-                                                >
-                                                    <FiEdit2 /> Edit
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleEdit(doc)}
-                                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-50 text-green-700 font-semibold rounded-lg hover:bg-green-100 active:bg-green-200 transition-colors text-sm min-h-[44px]"
-                                                >
-                                                    <FiEye /> View
-                                                </button>
-                                            )}
-                                            <a
-                                                href={getDownloadUrl(doc.id)}
-                                                onClick={notifyDownload}
-                                                className="flex-none flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 text-yellow-700 font-semibold rounded-lg hover:bg-yellow-100 active:bg-yellow-200 transition-colors text-sm min-h-[44px] min-w-[44px]"
-                                                title="Download"
-                                            >
-                                                <FiDownload />
-                                            </a>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="p-8 text-center text-gray-500">
-                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg
-                                        className="w-8 h-8 text-gray-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        />
-                                    </svg>
-                                </div>
-                                <p className="font-semibold">No Documents Found</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Desktop Table */}
-                    <div className="hidden md:block overflow-x-auto">
+                    {/* Table */}
+                    <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-gradient-to-r from-blue-900 to-blue-800 text-white">
                                 <tr>
@@ -522,65 +436,65 @@ export default function Home() {
                                     documents.data.map((doc, index) => {
                                         const rowNumber = (documents.current_page - 1) * documents.per_page + index + 1;
                                         return (
-                                            <tr
-                                                key={doc.id}
-                                                className="hover:bg-blue-50 transition-colors duration-150"
-                                            >
-                                                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
-                                                    {rowNumber}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-800 font-semibold">
-                                                    {doc.judul}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">
-                                                    {doc.category.nama}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">
-                                                    {formatDate(doc.periode_mulai)} -{" "}
-                                                    {formatDate(doc.periode_selesai)}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">
-                                                    {doc.area.nama}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span
-                                                        className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border-2 ${getStatusColor(
-                                                            doc.status
-                                                        )}`}
-                                                    >
-                                                        {doc.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        {canEditDocument(doc.status) ? (
-                                                            <button
-                                                                onClick={() => handleEdit(doc)}
-                                                                className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200 group"
-                                                                title="Edit"
-                                                            >
-                                                                <FiEdit2 className="text-blue-900 text-lg group-hover:scale-110 transition-transform" />
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => handleEdit(doc)}
-                                                                className="p-2 hover:bg-green-100 rounded-lg transition-colors duration-200 group"
-                                                                title="View"
-                                                            >
-                                                                <FiEye className="text-green-700 text-lg group-hover:scale-110 transition-transform" />
-                                                            </button>
-                                                        )}
-                                                        <a
-                                                            href={getDownloadUrl(doc.id)}
-                                                            onClick={notifyDownload}
-                                                            className="p-2 hover:bg-yellow-100 rounded-lg transition-colors duration-200 group"
-                                                            title="Download"
+                                        <tr
+                                            key={doc.id}
+                                            className="hover:bg-blue-50 transition-colors duration-150"
+                                        >
+                                            <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                                                {rowNumber}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-800 font-semibold">
+                                                {doc.judul}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                {doc.category.nama}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                {formatDate(doc.periode_mulai)} -{" "}
+                                                {formatDate(doc.periode_selesai)}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                {doc.area.nama}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span
+                                                    className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border-2 ${getStatusColor(
+                                                        doc.status
+                                                    )}`}
+                                                >
+                                                    {doc.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {canEditDocument(doc.status) ? (
+                                                        <button
+                                                            onClick={() => handleEdit(doc)}
+                                                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200 group"
+                                                            title="Edit"
                                                         >
-                                                            <FiDownload className="text-yellow-600 text-lg group-hover:scale-110 transition-transform" />
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                                            <FiEdit2 className="text-blue-900 text-lg group-hover:scale-110 transition-transform" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleEdit(doc)}
+                                                            className="p-2 hover:bg-green-100 rounded-lg transition-colors duration-200 group"
+                                                            title="View"
+                                                        >
+                                                            <FiEye className="text-green-700 text-lg group-hover:scale-110 transition-transform" />
+                                                        </button>
+                                                    )}
+                                                    <a
+                                                        href={getDownloadUrl(doc.id)}
+                                                        onClick={notifyDownload}
+                                                        className="p-2 hover:bg-yellow-100 rounded-lg transition-colors duration-200 group"
+                                                        title="Download"
+                                                    >
+                                                        <FiDownload className="text-yellow-600 text-lg group-hover:scale-110 transition-transform" />
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
                                         );
                                     })
                                 ) : (
@@ -609,7 +523,7 @@ export default function Home() {
                                                     No Documents Found
                                                 </p>
                                                 <p className="text-sm text-gray-500">
-                                                    {(statusFilter || categoryFilter || searchQuery)
+                                                    {(statusFilter || categoryFilter || searchQuery) 
                                                         ? "No documents match your filter criteria"
                                                         : "Start by uploading your first MEMO document"
                                                     }

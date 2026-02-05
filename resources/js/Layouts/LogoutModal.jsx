@@ -16,27 +16,27 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-3xl shadow-2xl w-[90%] max-w-[320px] sm:max-w-md transform transition-all animate-modal-appear overflow-hidden">
+            <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full transform transition-all animate-modal-appear overflow-hidden">
 
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 group z-10"
+                    className="absolute top-5 right-5 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 group z-10"
                     aria-label="Close"
                 >
-                    <IoClose className="text-xl sm:text-2xl text-gray-400 group-hover:text-gray-700 group-hover:rotate-90 transition-all duration-300" />
+                    <IoClose className="text-2xl text-gray-400 group-hover:text-gray-700 group-hover:rotate-90 transition-all duration-300" />
                 </button>
 
                 {/* Content */}
-                <div className="p-6 sm:p-8 pt-8 sm:pt-10 text-center">
+                <div className="p-8 pt-10 text-center">
                     {/* Animated Icon Container */}
-                    <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 mb-4 sm:mb-6">
+                    <div className="relative mx-auto w-20 h-20 mb-6">
                         {/* Outer Ring */}
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full animate-pulse-slow"></div>
 
                         {/* Inner Circle */}
                         <div className="absolute inset-2 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg animate-icon-bounce">
-                            <RiLogoutCircleLine className="text-white text-3xl sm:text-4xl" />
+                            <RiLogoutCircleLine className="text-white text-4xl" />
                         </div>
                     </div>
 
