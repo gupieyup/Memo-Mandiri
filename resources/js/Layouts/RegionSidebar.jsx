@@ -4,7 +4,7 @@ import { FiUpload, FiHome, FiPenTool } from "react-icons/fi";
 import { TbLogout } from "react-icons/tb";
 import { MdOutlineReviews } from "react-icons/md";
 
-const RegionSidebar = ({ handleLogout }) => {
+const RegionSidebar = ({ handleLogout, isOpen, onClose }) => {
     const { url } = usePage();
 
     const menuItems = [
@@ -24,7 +24,8 @@ const RegionSidebar = ({ handleLogout }) => {
 
     return (
         <aside
-            className="fixed top-0 left-0 z-40 w-72 h-screen transition-transform -translate-x-full sm:translate-x-0"
+            className={`fixed top-0 left-0 z-40 w-72 h-screen transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"
+                } md:translate-x-0`}
             aria-label="Sidebar"
         >
             <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 border-r border-gray-200 shadow-xl">

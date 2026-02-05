@@ -195,6 +195,39 @@ export default function UploadSign() {
         setDragOffset({ x, y });
     };
 
+    const handleTouchStart = (e) => {
+        if (!uploadedSignature) return;
+        // e.preventDefault(); // Do not prevent default here to allow some interactions, or handle carefully
+        e.stopPropagation();
+        setIsDraggingSignature(true);
+
+        const container = e.currentTarget.parentElement.parentElement;
+        const rect = container.getBoundingClientRect();
+        const touch = e.touches[0];
+
+        const x = touch.clientX - rect.left - signaturePosition.x;
+        const y = touch.clientY - rect.top - signaturePosition.y;
+        setDragOffset({ x, y });
+    };
+
+    const handleResizeTouchStart = (e) => {
+        if (!uploadedSignature) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizingSignature(true);
+
+        const touch = e.touches[0];
+        setResizeStart({
+            x: touch.clientX,
+            y: touch.clientY,
+            width: signatureSize.width,
+            height: signatureSize.height,
+            startX: signaturePosition.x,
+            startY: signaturePosition.y,
+        });
+    };
+
     const handleResizeMouseDown = (e) => {
         if (!uploadedSignature) return;
 
@@ -221,9 +254,12 @@ export default function UploadSign() {
             }
 
             animationFrameId = requestAnimationFrame(() => {
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
                 if (isResizingSignature && pdfWrapperRef.current) {
                     const rect = pdfWrapperRef.current.getBoundingClientRect();
-                    const deltaX = e.clientX - resizeStart.x;
+                    const deltaX = clientX - resizeStart.x;
                     const aspectRatio = resizeStart.width / resizeStart.height;
 
                     const maxWidth = Math.min(500, rect.width - resizeStart.startX);
@@ -244,8 +280,8 @@ export default function UploadSign() {
                 } else if (isDraggingSignature && pdfWrapperRef.current) {
                     const rect = pdfWrapperRef.current.getBoundingClientRect();
 
-                    let x = e.clientX - rect.left - dragOffset.x;
-                    let y = e.clientY - rect.top - dragOffset.y;
+                    let x = clientX - rect.left - dragOffset.x;
+                    let y = clientY - rect.top - dragOffset.y;
 
                     const maxX = rect.width - signatureSize.width;
                     const maxY = rect.height - signatureSize.height;
@@ -278,8 +314,12 @@ export default function UploadSign() {
         if (isDraggingSignature || isResizingSignature) {
             document.addEventListener("mousemove", handleMouseMove, { passive: true });
             document.addEventListener("mouseup", handleMouseUp);
+            document.addEventListener("touchmove", handleMouseMove, { passive: false });
+            document.addEventListener("touchend", handleMouseUp);
             document.body.style.userSelect = 'none';
             document.body.style.cursor = isDraggingSignature ? 'grabbing' : 'se-resize';
+            // Prevent scrolling on mobile while dragging
+            document.body.style.overflow = 'hidden';
         }
 
         return () => {
@@ -288,8 +328,11 @@ export default function UploadSign() {
             }
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
+            document.removeEventListener("touchmove", handleMouseMove);
+            document.removeEventListener("touchend", handleMouseUp);
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
+            document.body.style.overflow = '';
         };
     }, [isDraggingSignature, isResizingSignature, dragOffset, signaturePosition, signatureSize, resizeStart, setData]);
 
@@ -495,6 +538,7 @@ export default function UploadSign() {
                                                         alt="Signature"
                                                         className="w-full h-full object-contain select-none"
                                                         onMouseDown={handleSignatureMouseDown}
+                                                        onTouchStart={handleTouchStart}
                                                         draggable={false}
                                                         style={{
                                                             pointerEvents: isResizingSignature ? 'none' : 'auto',
@@ -503,6 +547,7 @@ export default function UploadSign() {
                                                     <div
                                                         className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 cursor-se-resize rounded-tl-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all shadow-md"
                                                         onMouseDown={handleResizeMouseDown}
+                                                        onTouchStart={handleResizeTouchStart}
                                                         title="Resize signature"
                                                     >
                                                         <FiMaximize2 className="text-white text-xs transform rotate-45" />
@@ -538,8 +583,8 @@ export default function UploadSign() {
                                         onDragLeave={handleDragLeave}
                                         onDrop={handleDrop}
                                         className={`border-3 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${isDragging
-                                                ? "border-blue-900 bg-blue-50 scale-105"
-                                                : "border-gray-300 bg-gray-50 hover:border-blue-700 hover:bg-blue-50"
+                                            ? "border-blue-900 bg-blue-50 scale-105"
+                                            : "border-gray-300 bg-gray-50 hover:border-blue-700 hover:bg-blue-50"
                                             }`}
                                     >
                                         <FiUploadCloud className="mx-auto text-6xl text-gray-400 mb-4" />

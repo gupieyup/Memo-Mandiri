@@ -1,14 +1,22 @@
 import React from "react";
 import { usePage } from "@inertiajs/react";
-import { HiUser } from "react-icons/hi";
+import { HiUser, HiMenuAlt2 } from "react-icons/hi";
 
-const Header = () => {
+const Header = ({ toggleSidebar }) => {
     const { auth } = usePage().props;
 
     return (
-        <header className="fixed top-0 right-0 left-0 md:left-72 z-30 bg-white border-b border-gray-100 shadow-sm">
+        <header className="fixed top-0 right-0 left-0 md:left-72 z-30 bg-white border-b border-gray-100 shadow-sm transition-all duration-300">
             <div className="px-6 py-3.5">
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-between md:justify-end">
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={toggleSidebar}
+                        className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                        <HiMenuAlt2 className="text-2xl" />
+                    </button>
+
                     {/* Profile */}
                     <div className="relative">
                         <div className="flex items-center space-x-3 px-4 py-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-yellow-50 transition-all duration-300 border border-gray-100 hover:border-blue-200 hover:shadow-md">
