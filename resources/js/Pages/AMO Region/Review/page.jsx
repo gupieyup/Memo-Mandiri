@@ -3,6 +3,7 @@ import { router, usePage } from "@inertiajs/react";
 import RegionLayout from "../../../Layouts/RegionLayout";
 import { FiDownload, FiEdit, FiSearch, FiFile } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
+import ConfirmationModal from "@/Components/ConfirmationModal";
 
 export default function Review({ auth, documents, areas, categories, statuses, filters }) {
     const { flash } = usePage().props;
@@ -16,6 +17,10 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
     const [isReadOnly, setIsReadOnly] = useState(false);
+
+    // Download Confirmation Modal State
+    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [documentToDownload, setDocumentToDownload] = useState(null);
 
     // Show toast notifications for flash messages
     useEffect(() => {
@@ -192,13 +197,27 @@ export default function Review({ auth, documents, areas, categories, statuses, f
         });
     };
 
-    const getDownloadUrl = (documentId) => `/amo-region/download-review-document/${documentId}`;
+    // Download Handlers
+    const openDownloadModal = (document) => {
+        setDocumentToDownload(document);
+        setIsDownloadModalOpen(true);
+    };
 
-    const notifyDownload = () => {
-        toast.success("Download Berhasil", {
-            description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
-            duration: 3000,
-        });
+    const closeDownloadModal = () => {
+        setIsDownloadModalOpen(false);
+        setDocumentToDownload(null);
+    };
+
+    const handleDownloadConfirm = () => {
+        if (documentToDownload) {
+            const downloadUrl = `/amo-region/download-review-document/${documentToDownload.id}`;
+            window.location.href = downloadUrl;
+            toast.success("Download Berhasil", {
+                description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
+                duration: 3000,
+            });
+            closeDownloadModal();
+        }
     };
 
     const getPreviewUrl = (doc) => {
@@ -568,14 +587,13 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                         >
                                                             <FiEdit className="text-lg" />
                                                         </button>
-                                                        <a
-                                                            href={getDownloadUrl(doc.id)}
-                                                            onClick={notifyDownload}
+                                                        <button
+                                                            onClick={() => openDownloadModal(doc)}
                                                             className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all"
                                                             title="Download"
                                                         >
                                                             <FiDownload className="text-lg" />
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -677,7 +695,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                     {/* Label/Status Section */}
                                     <div>
                                         <label className="block text-lg font-bold text-gray-800 mb-3">
-                                            Label
+                                            STATUS
                                         </label>
                                         {isReadOnly ? (
                                             <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-500 font-medium">
@@ -749,6 +767,17 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                     </div>
                 </div>
             )}
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isDownloadModalOpen}
+                onClose={closeDownloadModal}
+                onConfirm={handleDownloadConfirm}
+                title="Download Dokumen"
+                message="Apakah Anda yakin ingin mengunduh dokumen ini?"
+                confirmText="Ya, Download"
+                cancelText="Batal"
+            />
         </RegionLayout>
     );
 }

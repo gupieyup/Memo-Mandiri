@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 import RegionLayout from "../../../Layouts/RegionLayout";
 import EditDocumentModal from "./EditDocumentModal";
+import ConfirmationModal from "../../../Components/ConfirmationModal";
 import { FiEdit2, FiDownload, FiSearch, FiEye } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
 
@@ -13,6 +14,8 @@ export default function Home() {
     const [perPage, setPerPage] = useState(filters.per_page || 10);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [documentToDownload, setDocumentToDownload] = useState(null);
 
     // Update filters when props change
     useEffect(() => {
@@ -36,21 +39,21 @@ export default function Home() {
 
     const handleFilterChange = () => {
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/amo-region/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -60,19 +63,19 @@ export default function Home() {
     const handleStatusChange = (value) => {
         setStatusFilter(value);
         const params = {};
-        
+
         params.status = value;
-        
+
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/amo-region/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -82,19 +85,19 @@ export default function Home() {
     const handleCategoryChange = (value) => {
         setCategoryFilter(value);
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         params.category = value;
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/amo-region/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -103,21 +106,21 @@ export default function Home() {
 
     const handleSearch = () => {
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = perPage;
-        
+
         router.get("/amo-region/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -127,21 +130,21 @@ export default function Home() {
     const handlePerPageChange = (newPerPage) => {
         setPerPage(newPerPage);
         const params = {};
-        
+
         if (statusFilter) {
             params.status = statusFilter;
         }
-        
+
         if (categoryFilter) {
             params.category = categoryFilter;
         }
-        
+
         if (searchQuery) {
             params.search = searchQuery;
         }
-        
+
         params.per_page = newPerPage;
-        
+
         router.get("/amo-region/home", params, {
             preserveState: true,
             preserveScroll: true,
@@ -168,12 +171,29 @@ export default function Home() {
         setSelectedDocument(null);
     };
 
-    const getDownloadUrl = (documentId) => `/amo-region/download-document/${documentId}`;
-    const notifyDownload = () => {
-        toast.success("Download Berhasil", {
-            description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
-            duration: 3000,
-        });
+    // Download Modal Handlers
+    const openDownloadModal = (document) => {
+        setDocumentToDownload(document);
+        setIsDownloadModalOpen(true);
+    };
+
+    const closeDownloadModal = () => {
+        setIsDownloadModalOpen(false);
+        setDocumentToDownload(null);
+    };
+
+    const handleDownloadConfirm = () => {
+        if (documentToDownload) {
+            const downloadUrl = `/amo-region/download-document/${documentToDownload.id}`;
+            window.location.href = downloadUrl;
+
+            toast.success("Download Berhasil", {
+                description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
+                duration: 3000,
+            });
+
+            closeDownloadModal();
+        }
     };
 
     const getStatusColor = (status) => {
@@ -257,8 +277,8 @@ export default function Home() {
                                     className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
                                 >
                                     <option value="">All Status</option>
-                                    {statuses.filter(status => 
-                                        status !== 'Revision by AMO Region' && 
+                                    {statuses.filter(status =>
+                                        status !== 'Revision by AMO Region' &&
                                         status !== 'Accept by AMO Region'
                                     ).map((status) => (
                                         <option key={status} value={status}>
@@ -439,65 +459,64 @@ export default function Home() {
                                     documents.data.map((doc, index) => {
                                         const rowNumber = (documents.current_page - 1) * documents.per_page + index + 1;
                                         return (
-                                        <tr
-                                            key={doc.id}
-                                            className="hover:bg-blue-50 transition-colors duration-150"
-                                        >
-                                            <td className="px-6 py-4 text-sm text-gray-700 font-medium">
-                                                {rowNumber}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-800 font-semibold">
-                                                {doc.judul}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {doc.category.nama}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {formatDate(doc.periode_mulai)} -{" "}
-                                                {formatDate(doc.periode_selesai)}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {doc.area.nama}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span
-                                                    className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border-2 ${getStatusColor(
-                                                        doc.status
-                                                    )}`}
-                                                >
-                                                    {doc.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    {canEditDocument(doc.status) ? (
-                                                        <button
-                                                            onClick={() => handleEdit(doc)}
-                                                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200 group"
-                                                            title="Edit"
-                                                        >
-                                                            <FiEdit2 className="text-blue-900 text-lg group-hover:scale-110 transition-transform" />
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleEdit(doc)}
-                                                            className="p-2 hover:bg-green-100 rounded-lg transition-colors duration-200 group"
-                                                            title="View"
-                                                        >
-                                                            <FiEye className="text-green-700 text-lg group-hover:scale-110 transition-transform" />
-                                                        </button>
-                                                    )}
-                                                    <a
-                                                        href={getDownloadUrl(doc.id)}
-                                                        onClick={notifyDownload}
-                                                        className="p-2 hover:bg-yellow-100 rounded-lg transition-colors duration-200 group"
-                                                        title="Download"
+                                            <tr
+                                                key={doc.id}
+                                                className="hover:bg-blue-50 transition-colors duration-150"
+                                            >
+                                                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                                                    {rowNumber}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-800 font-semibold">
+                                                    {doc.judul}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {doc.category.nama}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {formatDate(doc.periode_mulai)} -{" "}
+                                                    {formatDate(doc.periode_selesai)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {doc.area.nama}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold border-2 ${getStatusColor(
+                                                            doc.status
+                                                        )}`}
                                                     >
-                                                        <FiDownload className="text-yellow-600 text-lg group-hover:scale-110 transition-transform" />
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                        {doc.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        {canEditDocument(doc.status) ? (
+                                                            <button
+                                                                onClick={() => handleEdit(doc)}
+                                                                className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200 group"
+                                                                title="Edit"
+                                                            >
+                                                                <FiEdit2 className="text-blue-900 text-lg group-hover:scale-110 transition-transform" />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleEdit(doc)}
+                                                                className="p-2 hover:bg-green-100 rounded-lg transition-colors duration-200 group"
+                                                                title="View"
+                                                            >
+                                                                <FiEye className="text-green-700 text-lg group-hover:scale-110 transition-transform" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => openDownloadModal(doc)}
+                                                            className="p-2 hover:bg-yellow-100 rounded-lg transition-colors duration-200 group"
+                                                            title="Download"
+                                                        >
+                                                            <FiDownload className="text-yellow-600 text-lg group-hover:scale-110 transition-transform" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         );
                                     })
                                 ) : (
@@ -526,7 +545,7 @@ export default function Home() {
                                                     No Documents Found
                                                 </p>
                                                 <p className="text-sm text-gray-500">
-                                                    {(statusFilter || categoryFilter || searchQuery) 
+                                                    {(statusFilter || categoryFilter || searchQuery)
                                                         ? "No documents match your filter criteria"
                                                         : "Start by uploading your first MEMO document"
                                                     }
@@ -549,6 +568,17 @@ export default function Home() {
                 areas={areas}
                 categories={categories}
                 canEdit={selectedDocument ? canEditDocument(selectedDocument.status) : false}
+            />
+
+            {/* Download Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isDownloadModalOpen}
+                onClose={closeDownloadModal}
+                onConfirm={handleDownloadConfirm}
+                title="Konfirmasi Download"
+                message={`Apakah Anda yakin ingin mengunduh dokumen "${documentToDownload?.judul}"?`}
+                confirmText="Ya, Download"
+                cancelText="Batal"
             />
         </RegionLayout>
     );

@@ -3,6 +3,7 @@ import { router, usePage } from "@inertiajs/react";
 import CCHLayout from "../../../Layouts/CCHLayout";
 import { FiDownload, FiEdit, FiSearch, FiFile } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
+import ConfirmationModal from "@/Components/ConfirmationModal";
 
 export default function Review({ auth, documents, areas, categories, statuses, filters }) {
     const { flash } = usePage().props;
@@ -15,6 +16,10 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
+
+    // Download Confirmation Modal State
+    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [documentToDownload, setDocumentToDownload] = useState(null);
 
     // Show toast notifications for flash messages
     useEffect(() => {
@@ -218,13 +223,27 @@ export default function Review({ auth, documents, areas, categories, statuses, f
         });
     };
 
-    const getDownloadUrl = (documentId) => `/cch/download-document/${documentId}`;
+    // Download Handlers
+    const openDownloadModal = (document) => {
+        setDocumentToDownload(document);
+        setIsDownloadModalOpen(true);
+    };
 
-    const notifyDownload = () => {
-        toast.success("Download Berhasil", {
-            description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
-            duration: 3000,
-        });
+    const closeDownloadModal = () => {
+        setIsDownloadModalOpen(false);
+        setDocumentToDownload(null);
+    };
+
+    const handleDownloadConfirm = () => {
+        if (documentToDownload) {
+            const downloadUrl = `/cch/download-document/${documentToDownload.id}`;
+            window.location.href = downloadUrl;
+            toast.success("Download Berhasil", {
+                description: "Dokumen berhasil disimpan ke dalam penyimpanan anda.",
+                duration: 3000,
+            });
+            closeDownloadModal();
+        }
     };
 
     const getPreviewUrl = (doc) => {
@@ -268,6 +287,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                 },
                 onError: (errors) => {
                     // Error handling logic if needed, or leave empty if global error handler exists
+                    console.error('Update status error:', errors);
                 },
             }
         );
@@ -570,14 +590,13 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                         >
                                                             <FiEdit className="text-lg" />
                                                         </button>
-                                                        <a
-                                                            href={getDownloadUrl(doc.id)}
-                                                            onClick={notifyDownload}
+                                                        <button
+                                                            onClick={() => openDownloadModal(doc)}
                                                             className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all"
                                                             title="Download"
                                                         >
                                                             <FiDownload className="text-lg" />
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -678,7 +697,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                     {/* Label/Status Section */}
                                     <div>
                                         <label className="block text-lg font-bold text-gray-800 mb-3">
-                                            Label
+                                            STATUS
                                         </label>
                                         <select
                                             value={selectedStatus}
@@ -742,6 +761,17 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                     </div>
                 </div>
             )}
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isDownloadModalOpen}
+                onClose={closeDownloadModal}
+                onConfirm={handleDownloadConfirm}
+                title="Download Dokumen"
+                message="Apakah Anda yakin ingin mengunduh dokumen ini?"
+                confirmText="Ya, Download"
+                cancelText="Batal"
+            />
         </CCHLayout>
     );
 }
