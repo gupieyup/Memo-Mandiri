@@ -23,7 +23,8 @@ class AreaHomeController extends Controller
         $perPage = $request->input('per_page', 10); // Default 10 items per page
         
         // Build query for documents belonging to user's area
-        $query = Document::with(['category', 'area', 'user'])
+        // Sertakan juga riwayat feedback (notes) beserta user-nya
+        $query = Document::with(['category', 'area', 'user', 'feedbacks.user'])
             ->where('user_id', $user->id);
         
         // Apply search filter if provided

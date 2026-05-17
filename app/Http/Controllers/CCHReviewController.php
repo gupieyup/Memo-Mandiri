@@ -28,11 +28,11 @@ class CCHReviewController extends Controller
         $query = Document::with(['area', 'category', 'user', 'feedbacks.user']);
         
         // Filter by status
-        $query->whereIn('status', [
-            'Accept by MO',
-            'Revision by CCH',
-            'Accept by CCH'
-        ]);
+        $query->where(function ($q) {
+            $q->whereHas('user', function ($userQuery) {
+                $userQuery->whereIn('role', ['AMO Area', 'AMO Region']);
+            });
+        })->where('status', '!=', 'Draft');
         
         // Apply search filter
         if ($searchQuery) {
@@ -57,28 +57,18 @@ class CCHReviewController extends Controller
         // Get documents with signature info
         $documents = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
-        // Transform documents to include signature info
-        $documents->getCollection()->transform(function ($document) {
-            $docArray = $document->toArray();
-            $docArray['has_signature'] = !is_null($document->signature_page);
-            $docArray['signature_info'] = [
-                'page' => $document->signature_page,
-                'x' => $document->signature_x,
-                'y' => $document->signature_y,
-                'width' => $document->signature_width,
-                'height' => $document->signature_height,
-            ];
-            return $docArray;
-        });
-        
         // Get all areas and categories for filters
         $areas = Area::select('id', 'nama')->get();
         $categories = Category::select('id', 'nama')->get();
         
         $statuses = [
+            'On Process',
+            'Accept by AMO Region',
+            'Revision by AMO Region',
             'Accept by MO',
-            'Revision by CCH',
-            'Accept by CCH'
+            'Revision by MO',
+            'Accept by CCH',
+            'Revision by CCH'
         ];
         
         return Inertia::render("CCH/Review/page", [
@@ -110,29 +100,39 @@ class CCHReviewController extends Controller
     
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:Revision by CCH,Accept by CCH',
+        $validated = $request->validate([
+            'status' => 'required|in:Accept by CCH,Revision by CCH',
             'notes' => 'nullable|string',
         ]);
         
         $document = Document::findOrFail($id);
+
+        // Hanya izinkan CCH mengubah status dokumen jika status SAAT INI
+        // adalah salah satu dari:
+        // - On Process
+        // - Accept by AMO Region
+        // - Accept by MO
+        if (!in_array($document->status, ['On Process', 'Accept by AMO Region', 'Accept by MO'])) {
+            return redirect()->back()->with('error', 'Dokumen tidak dapat direview pada status saat ini.');
+        }
+      
         $user = Auth::user();
-        
-        $document->status = $request->status;
+
+        $document->status = $validated['status'];
         
         if ($request->filled('notes')) {
-            $document->notes = $request->notes;
+            $document->notes = $validated['notes'];
         }
-        
+
         $document->save();
-        
-        if ($request->filled('notes')) {
-            Feedback::create([
-                'message' => $request->notes,
-                'user_id' => $user->id,
-                'document_id' => $document->id,
-            ]);
-        }
+
+        if ($request->filled('notes') && !empty(trim($validated['notes']))) {
+                $feedback = Feedback::create([
+                    'message' => $validated['notes'],
+                    'user_id' => $user->id,
+                    'document_id' => $document->id,
+                ]);
+            }
         
         return redirect()->back()->with('success', 'Review dokumen berhasil disimpan');
     }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 import CCHLayout from "../../../Layouts/CCHLayout";
-import { FiDownload, FiEdit, FiSearch, FiFile } from "react-icons/fi";
+import { FiDownload, FiEdit, FiSearch, FiFile, FiEye } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
 import ConfirmationModal from "@/Components/ConfirmationModal";
 
@@ -16,7 +16,9 @@ export default function Review({ auth, documents, areas, categories, statuses, f
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [reviewNotes, setReviewNotes] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
-
+    const [isReadOnly, setIsReadOnly] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
     // Download Confirmation Modal State
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const [documentToDownload, setDocumentToDownload] = useState(null);
@@ -253,9 +255,21 @@ export default function Review({ auth, documents, areas, categories, statuses, f
 
     const openReviewModal = (document) => {
         setSelectedDocument(document);
-        setReviewNotes(document.notes || "");
-        setSelectedStatus(document.status);
+        setReviewNotes("");
+
+        const editable = ["On Process", "Accept by AMO Region", "Accept by MO"].includes(document.status);
+        setIsReadOnly(!editable);
+
+        if (editable) {
+            // Default pilihan saat pertama buka: Accept by CCH
+            setSelectedStatus("Accept by CCH");
+        } else {
+            // Jika tidak editable, tampilkan status saat ini apa adanya
+            setSelectedStatus(document.status);
+        }
+
         setShowReviewModal(true);
+        setIsSubmitting(false);
     };
 
     const closeReviewModal = () => {
@@ -263,6 +277,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
         setSelectedDocument(null);
         setReviewNotes("");
         setSelectedStatus("");
+        setIsSubmitting(false);
     };
 
     const handleSaveReview = () => {
@@ -283,24 +298,36 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             },
             {
                 onSuccess: () => {
+                    setIsSubmitting(false);
                     closeReviewModal();
                 },
                 onError: (errors) => {
-                    // Error handling logic if needed, or leave empty if global error handler exists
-                    console.error('Update status error:', errors);
+                    setIsSubmitting(false);
+                    console.error('Save review error:', errors);
                 },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                }
             }
         );
     };
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
-            case "Accept by MO":
+            case "On Process":
                 return "bg-yellow-100 text-yellow-800 border border-yellow-300";
+            case "Revision by AMO Region":
+                return "bg-red-100 text-red-800 border border-red-300";
+            case "Accept by AMO Region":
+                return "bg-green-100 text-green-800 border border-green-300";
+            case "Revision by MO":
+                return "bg-red-100 text-red-800 border border-red-300";
+            case "Accept by MO":
+                return "bg-green-100 text-green-800 border border-green-300";
             case "Revision by CCH":
                 return "bg-red-100 text-red-800 border border-red-300";
             case "Accept by CCH":
-                return "bg-green-100 text-green-800 border border-green-300";
+                return "bg-green-100 text-blue-800 border border-blue-300";
             default:
                 return "bg-gray-100 text-gray-800 border border-gray-300";
         }
@@ -547,6 +574,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                             <tbody className="divide-y divide-gray-200">
                                 {documents?.data && documents.data.length > 0 ? (
                                     documents.data.map((doc, index) => {
+                                        const editable = ["On Process", "Accept by AMO Region", "Accept by MO"].includes(doc.status);
                                         const rowNumber = (documents.current_page - 1) * documents.per_page + index + 1;
                                         return (
                                             <tr
@@ -586,9 +614,13 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                         <button
                                                             onClick={() => openReviewModal(doc)}
                                                             className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
-                                                            title="Review"
+                                                            title={editable ? "Review" : "View"}
                                                         >
-                                                            <FiEdit className="text-lg" />
+                                                            {editable ? (
+                                                                <FiEdit className="text-lg" />
+                                                            ) : (
+                                                                <FiEye className="text-lg" />
+                                                            )}
                                                         </button>
                                                         <button
                                                             onClick={() => openDownloadModal(doc)}
@@ -681,33 +713,42 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                 {/* Notes and Label */}
                                 <div className="space-y-6">
                                     {/* Notes Section */}
-                                    <div>
-                                        <label className="block text-lg font-bold text-gray-800 mb-3">
-                                            NOTES
-                                        </label>
-                                        <textarea
-                                            value={reviewNotes}
-                                            onChange={(e) => setReviewNotes(e.target.value)}
-                                            placeholder="Add your review notes here..."
-                                            rows="6"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                                        />
-                                    </div>
+                            <div>
+                                <label className="block text-lg font-bold text-gray-800 mb-3">
+                                    NOTES
+                                </label>
+                                <textarea
+                                    value={reviewNotes}
+                                    onChange={(e) => setReviewNotes(e.target.value)}
+                                    placeholder="Add your review notes here..."
+                                    rows="6"
+                                    readOnly={isReadOnly}
+                                    className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${
+                                        isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+                                    }`}
+                                />
+                            </div>
 
                                     {/* Label/Status Section */}
-                                    <div>
-                                        <label className="block text-lg font-bold text-gray-800 mb-3">
-                                            STATUS
-                                        </label>
-                                        <select
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        >
-                                            <option value="Revision by CCH">Revision by CCH</option>
-                                            <option value="Accept by CCH">Accept by CCH</option>
-                                        </select>
+                            <div>
+                                <label className="block text-lg font-bold text-gray-800 mb-3">
+                                    STATUS
+                                </label>
+                                {isReadOnly ? (
+                                    <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-500 font-medium">
+                                        {selectedStatus}
                                     </div>
+                                ) : (
+                                    <select
+                                        value={selectedStatus}
+                                        onChange={(e) => setSelectedStatus(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    >
+                                        <option value="Accept by CCH">Accept by CCH</option>
+                                        <option value="Revision by CCH">Revision by CCH</option>
+                                    </select>
+                                )}
+                            </div>
                                 </div>
                             </div>
 
@@ -751,12 +792,14 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={handleSaveReview}
-                                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-                            >
-                                Save
-                            </button>
+                            {!isReadOnly && (
+                                <button
+                                    onClick={handleSaveReview}
+                                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                                >
+                                    Save
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

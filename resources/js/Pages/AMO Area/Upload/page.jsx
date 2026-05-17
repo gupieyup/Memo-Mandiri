@@ -172,15 +172,6 @@ export default function Upload() {
             />
 
             <div className="min-h-full">
-                {flash?.success && (
-                    <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md flex items-center animate-fade-in">
-                        <FiCheck className="text-green-600 text-xl mr-3 flex-shrink-0" />
-                        <p className="text-green-800 font-medium">
-                            {flash.success}
-                        </p>
-                    </div>
-                )}
-
                 <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-2xl p-5 mb-5 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400 opacity-10 rounded-full -mr-32 -mt-32"></div>
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-300 opacity-10 rounded-full -ml-24 -mb-24"></div>

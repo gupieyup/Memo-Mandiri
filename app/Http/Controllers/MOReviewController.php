@@ -66,14 +66,12 @@ class MOReviewController extends Controller
         // Get all unique statuses for filter dropdown
         $statuses = [
             'On Process',
-            'Revision by AMO Region',
-            'Reject by AMO Region',
             'Accept by AMO Region',
-            'Revision by MO',
-            'Reject by MO',
+            'Revision by AMO Region',
             'Accept by MO',
+            'Revision by MO',
             'Accept by CCH',
-            'Reject by CCH'
+            'Revision by CCH'
         ];
         
         return Inertia::render("MO/Review/page", [
@@ -106,16 +104,8 @@ class MOReviewController extends Controller
     public function updateStatus(Request $request, $id)
     {
         try {
-            // Log incoming request data
-            Log::info('Update status request', [
-                'document_id' => $id,
-                'status' => $request->input('status'),
-                'notes' => $request->input('notes'),
-                'all_data' => $request->all()
-            ]);
-
             $validated = $request->validate([
-                'status' => 'required|in:Accept by MO,Reject by MO',
+                'status' => 'required|in:Accept by MO,Revision by MO',
                 'notes' => 'nullable|string',
             ]);
             

@@ -1,6 +1,6 @@
 import React from "react";
 import { usePage } from "@inertiajs/react";
-import { FiUpload } from "react-icons/fi";
+import { FiPenTool } from "react-icons/fi";
 import { MdOutlineReviews } from "react-icons/md";
 import { TbLogout } from "react-icons/tb";
 
@@ -11,7 +11,7 @@ const CCHSidebar = ({ handleLogout, isOpen, onClose }) => {
         { href: "/cch/review", icon: MdOutlineReviews, label: "Review" },
         {
             href: "/cch/upload-signature",
-            icon: FiUpload,
+            icon: FiPenTool,
             label: "Upload Signature",
         },
     ];

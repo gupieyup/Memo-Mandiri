@@ -262,12 +262,12 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                     </p>
                                 </div>
 
-                                {/* Right Column - Form */}
+                                {/* Right Column - Form & Notes */}
                                 <div className="space-y-4">
-                                    {/* Notes (read-only) */}
+                                    {/* Latest Notes (read-only from document) */}
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">
-                                            NOTES
+                                            LATEST NOTES
                                         </label>
                                         <textarea
                                             value={data.notes}
@@ -408,6 +408,37 @@ export default function EditDocumentModal({ isOpen, onClose, document, areas, ca
                                 </div>
                             </div>
                         </div>
+
+                        {/* Previous Feedback History */}
+                        {document?.feedbacks && document.feedbacks.length > 0 && (
+                            <div className="px-4 md:px-6 pb-4">
+                                <div className="mt-3 border-t-2 border-gray-200 pt-3">
+                                    <h4 className="text-sm font-bold text-gray-800 mb-2">
+                                        Previous Feedback History
+                                    </h4>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                        {document.feedbacks.map((feedback, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="font-semibold text-xs text-gray-700">
+                                                        {feedback.user?.nama || "Unknown"}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-500">
+                                                        {new Date(feedback.created_at).toLocaleDateString("id-ID")}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-600">
+                                                    {feedback.message}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Footer */}
                         {canEdit && (

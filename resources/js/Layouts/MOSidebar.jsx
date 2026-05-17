@@ -1,6 +1,6 @@
 import React from "react";
 import { usePage } from "@inertiajs/react";
-import { FiUpload } from "react-icons/fi";
+import { FiPenTool } from "react-icons/fi";
 import { BsPeople } from "react-icons/bs";
 import { MdOutlineReviews } from "react-icons/md";
 import { TbLogout } from "react-icons/tb";
@@ -12,7 +12,7 @@ const MOSidebar = ({ handleLogout, isOpen, onClose }) => {
         { href: "/mo/review", icon: MdOutlineReviews, label: "Review" },
         {
             href: "/mo/upload-signature",
-            icon: FiUpload,
+            icon: FiPenTool,
             label: "Upload Signature",
         },
         { href: "/mo/manage-account", icon: BsPeople, label: "Manage Account" },

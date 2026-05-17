@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 import MOLayout from "../../../Layouts/MOLayout";
-import { FiDownload, FiEdit, FiSearch, FiFile } from "react-icons/fi";
+import { FiDownload, FiEdit, FiSearch, FiFile, FiEye } from "react-icons/fi";
 import { toast, Toaster } from "sonner";
 import ConfirmationModal from "@/Components/ConfirmationModal";
 
@@ -239,7 +239,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
 
     const openReviewModal = (document) => {
         setSelectedDocument(document);
-        setReviewNotes(document.notes || "");
+        setReviewNotes("");
 
         // Allowed if "On Process" or "Accept by AMO Region"
         const editable = ["On Process", "Accept by AMO Region"].includes(document.status);
@@ -315,21 +315,17 @@ export default function Review({ auth, documents, areas, categories, statuses, f
             case "On Process":
                 return "bg-yellow-100 text-yellow-800 border border-yellow-300";
             case "Revision by AMO Region":
-                return "bg-orange-100 text-orange-800 border border-orange-300";
-            case "Reject by AMO Region":
                 return "bg-red-100 text-red-800 border border-red-300";
             case "Accept by AMO Region":
                 return "bg-green-100 text-green-800 border border-green-300";
             case "Revision by MO":
-                return "bg-orange-100 text-orange-800 border border-orange-300";
-            case "Reject by MO":
                 return "bg-red-100 text-red-800 border border-red-300";
             case "Accept by MO":
                 return "bg-green-100 text-green-800 border border-green-300";
-            case "Accept by CCH":
-                return "bg-blue-100 text-blue-800 border border-blue-300";
-            case "Reject by CCH":
+            case "Revision by CCH":
                 return "bg-red-100 text-red-800 border border-red-300";
+            case "Accept by CCH":
+                return "bg-green-100 text-blue-800 border border-blue-300";
             default:
                 return "bg-gray-100 text-gray-800 border border-gray-300";
         }
@@ -576,6 +572,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                             <tbody className="divide-y divide-gray-200">
                                 {documents?.data && documents.data.length > 0 ? (
                                     documents.data.map((doc, index) => {
+                                        const editable = ["On Process", "Accept by AMO Region"].includes(doc.status);
                                         const rowNumber = (documents.current_page - 1) * documents.per_page + index + 1;
                                         return (
                                             <tr
@@ -615,9 +612,13 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                         <button
                                                             onClick={() => openReviewModal(doc)}
                                                             className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all"
-                                                            title="Review"
+                                                            title={editable ? "Review" : "View"}
                                                         >
-                                                            <FiEdit className="text-lg" />
+                                                            {editable ? (
+                                                                <FiEdit className="text-lg" />
+                                                            ) : (
+                                                                <FiEye className="text-lg" />
+                                                            )}
                                                         </button>
                                                         <button
                                                             onClick={() => openDownloadModal(doc)}
@@ -740,7 +741,7 @@ export default function Review({ auth, documents, areas, categories, statuses, f
                                                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                             >
                                                 <option value="Accept by MO">Accept by MO</option>
-                                                <option value="Reject by MO">Reject by MO</option>
+                                                <option value="Revision by MO">Revision by MO</option>
                                             </select>
                                         )}
                                     </div>
